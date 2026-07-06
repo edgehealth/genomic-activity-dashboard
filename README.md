@@ -30,6 +30,10 @@ whole component tree keeps working once real numbers arrive.
 
 ---
 
+> **📋 See [`NEXT_STEPS.md`](./NEXT_STEPS.md)** for the concrete production roadmap — real GLH
+> map boundaries (with the ICB→GLH mapping), API wiring, and the QA checklist. The overview
+> below is a summary.
+
 ## Bringing it to life — what to add
 
 ### 1. Wire in real data (the main task)
