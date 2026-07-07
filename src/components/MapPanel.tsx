@@ -7,17 +7,19 @@ interface Props {
   hubs: Hub[]
   metric: MetricKey
   selectedId: string
+  selectedIcb: string | null
   onSelectMetric: (m: MetricKey) => void
   onSelectHub: (id: string) => void
+  onSelectIcb: (icbCode: string, glhId: string) => void
 }
 
-export default function MapPanel({ hubs, metric, selectedId, onSelectMetric, onSelectHub }: Props) {
+export default function MapPanel({ hubs, metric, selectedId, selectedIcb, onSelectMetric, onSelectHub, onSelectIcb }: Props) {
   return (
     <section className="panel mappanel">
       <div className="mappanel__head">
         <div>
           <h3 className="panel__title">Genomic Laboratory Hubs — England</h3>
-          <p className="panel__sub">Shaded by selected metric. Click a region for detail.</p>
+          <p className="panel__sub">Shaded by selected metric. Click an ICB to see its hub's detail.</p>
         </div>
         <div className="toggle" role="tablist" aria-label="Map metric">
           {METRIC_ORDER.map((m) => (
@@ -36,7 +38,13 @@ export default function MapPanel({ hubs, metric, selectedId, onSelectMetric, onS
 
       <div className="mappanel__body">
         <div className="mappanel__map">
-          <RegionMap hubs={hubs} metric={metric} selectedId={selectedId} onSelect={onSelectHub} />
+          <RegionMap
+            hubs={hubs}
+            metric={metric}
+            selectedId={selectedId}
+            selectedIcb={selectedIcb}
+            onSelectIcb={onSelectIcb}
+          />
           <div className="legend">
             <span>Lower</span>
             <span className="legend__bar" aria-hidden />

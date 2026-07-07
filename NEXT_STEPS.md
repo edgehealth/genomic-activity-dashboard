@@ -9,48 +9,42 @@ The whole component tree only depends on the shapes in `src/types.ts` (`Hub[]` +
 
 ---
 
-## 1. The map — real GLH boundaries (GeoJSON)
+## 1. The map — ✅ DONE (real ICB-level map, April 2026 boundaries)
 
-Today `src/components/RegionMap.tsx` draws **hand-drawn placeholder polygons** — interactive
-and colour-coded, but not geographically accurate.
+Implemented on branch `PBD-16-interactive-map`. `RegionMap.tsx` now renders the **official
+ONS "Integrated Care Boards (April 2026)" boundaries** — the 36 post-merger ICBs — grouped
+into the 7 GLHs, projected with the same linear lng/lat → SVG approach as the
+fingertips-dashboard map (`src/hooks/useMap.ts` — planar SVG fills, so GeoJSON winding
+order can't break rendering, which is what broke the earlier `d3-geo` version).
+Interaction is at **ICB level**: clicking an ICB selects it
+and its parent GLH, so all GLH-level panels keep working unchanged. Hovering shows the ICB
+name + GLH; shading is by the parent GLH's value on the active metric (data is GLH-level
+today — switch to per-ICB shading in `RegionMap.tsx` if ICB-level data arrives).
 
-### Why we can't use the "Regions" file directly
-The ONS *Regions (December 2023)* file is the **9 statutory English regions**. The 7 Genomic
-Laboratory Hubs (GLHs) **split geography below region level** — e.g. West Essex → North
-Thames but the rest of Essex → East GLH; London splits across North Thames + South East.
-Those split lines fall on **ICB (Integrated Care Board) boundaries**, so ICBs are the correct
-building block.
+### How it fits together
+- **`src/data/icb-to-glh.json`** — the ICB → GLH mapping, transcribed from the
+  source-of-truth SQL table **`References.ICB_to_GLH`** (DASH > Tables). One row per new
+  ICB: ONS GSS code (`E54…`), ODS code, name, `glhId`, former (pre-merger) ICBs.
+- **`src/data/icbToGlh.ts`** — typed wrapper + lookup by code. Swap the JSON for an API
+  response later and nothing downstream changes.
+- **`scripts/build-map.mjs`** (`npm run build:map`) — reads the raw ONS boundaries from
+  the committed copy in `data-src/ons-icb-april-2026-bsc.geojson` (the download URL for
+  future boundary updates is in the script header; the pipeline itself runs fully offline),
+  validates the join (fails if any of the 36 ICBs is unmapped or a `glhId` is unknown),
+  simplifies with mapshaper, dissolves GLH outlines, and writes the two committed layers:
+  `src/data/icb-features.json` (36 ICBs, ~79 KB) and `src/data/glh-outlines.json` (7 GLHs,
+  ~41 KB). Re-run only when boundaries or the mapping change.
 
-### Steps
-1. **Download ICB boundaries.** ONS Open Geography Portal → search
-   *"Integrated Care Boards April 2023 Boundaries EN"* → grab the **BUC** (ultra-generalised,
-   small) version → export **GeoJSON**. This gives 42 ICB polygons.
-2. **Dissolve 42 ICBs → 7 GLHs** using the mapping below (in [mapshaper.org](https://mapshaper.org)
-   or via code), tagging each merged polygon with the hub `id`.
-3. **Simplify** to ~5–10% in mapshaper (shrinks MB → KB for the web).
-4. **Save** the result as `src/data/glh.geojson` (or `public/glh.geojson`).
-5. **Render it.** Add `react-simple-maps` (or `d3-geo`), rewrite `RegionMap.tsx` to draw real
-   `<Geography>` paths keyed by hub `id`, reusing the existing `scaleColor` shading + click
-   handlers. Nothing else in the dashboard changes.
-
-### ICB → GLH mapping
-| GLH (`id`) | ICBs |
-|---|---|
-| **North West** (`north-west`) | Greater Manchester · Cheshire & Merseyside · Lancashire & South Cumbria |
-| **North East & Yorkshire** (`ney`) | North East & North Cumbria · Humber & North Yorkshire · West Yorkshire · South Yorkshire |
-| **East** (`east`) | Derby & Derbyshire · Nottingham & Nottinghamshire · Leicester, Leicestershire & Rutland · Northamptonshire · Lincolnshire · Cambridgeshire & Peterborough · Norfolk & Waveney · Suffolk & North East Essex · Mid & South Essex |
-| **North Thames** (`north-thames`) | North Central London · North East London · North West London · Hertfordshire & West Essex |
-| **South East** (`south-east`) | South East London · South West London · Kent & Medway · Sussex · Surrey Heartlands |
-| **Central & South** (`central-south`) | Birmingham & Solihull · Black Country · Coventry & Warwickshire · Herefordshire & Worcestershire · Staffordshire & Stoke-on-Trent · Shropshire, Telford & Wrekin · Buckinghamshire, Oxfordshire & Berkshire West · Frimley · Hampshire & Isle of Wight |
-| **South West** (`south-west`) | Bristol, North Somerset & South Gloucestershire · Gloucestershire · Somerset · Bath & NE Somerset, Swindon & Wiltshire · Devon · Cornwall & Isles of Scilly |
-
-**⚠️ Three ICBs still to confirm** (not named in the official GLH coverage text):
-- **Dorset ICB** — likely **Central & South** (historic Wessex), unconfirmed.
-- **Bedfordshire, Luton & Milton Keynes ICB** — either **East** or **North Thames**.
-- **Frimley ICB** — straddles Surrey/Berkshire/Hampshire; provisionally **Central & South**,
-  could be **South East**.
-
-Once those three land, all 42 ICBs are assigned.
+### Follow-ups for the map
+- **⚠️ Dorset ICB is mapped to South West GLH** (per `References.ICB_to_GLH`). Independent
+  research suggested **Central & South** (the Wessex Genomics Laboratory Service, which
+  historically covers Dorset, is part of Central & South GLH). Confirm with the data owner.
+- **GLH-straddling ICBs**: the new **Central East** and **Essex** ICBs both include areas
+  that reported under **North Thames** GLH pre-merger (Hertfordshire, West Essex); the
+  mapping assigns both wholly to **East**. Fine for filtering, but be aware when comparing
+  with historic GLH-attributed activity.
+- **April 2027**: a second merger wave takes England from 36 → ~26 ICBs. When ONS publishes
+  the new boundaries, update `icb-to-glh.json` and re-run `npm run build:map`.
 
 ---
 

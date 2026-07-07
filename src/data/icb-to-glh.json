@@ -1,0 +1,276 @@
+[
+  {
+    "icbCode": "E54000008",
+    "odsCode": "QYG",
+    "icbName": "NHS Cheshire and Merseyside ICB",
+    "glhId": "north-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000010",
+    "odsCode": "QNC",
+    "icbName": "NHS Staffordshire and Stoke-on-Trent ICB",
+    "glhId": "central-south",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000011",
+    "odsCode": "QOC",
+    "icbName": "NHS Shropshire, Telford and Wrekin ICB",
+    "glhId": "central-south",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000013",
+    "odsCode": "QJM",
+    "icbName": "NHS Lincolnshire ICB",
+    "glhId": "east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000015",
+    "odsCode": "QK1",
+    "icbName": "NHS Leicester, Leicestershire and Rutland ICB",
+    "glhId": "east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000018",
+    "odsCode": "QWU",
+    "icbName": "NHS Coventry and Warwickshire ICB",
+    "glhId": "central-south",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000019",
+    "odsCode": "QGH",
+    "icbName": "NHS Herefordshire and Worcestershire ICB",
+    "glhId": "central-south",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000029",
+    "odsCode": "QMF",
+    "icbName": "NHS North East London ICB",
+    "glhId": "north-thames",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000030",
+    "odsCode": "QKK",
+    "icbName": "NHS South East London ICB",
+    "glhId": "south-east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000031",
+    "odsCode": "QWE",
+    "icbName": "NHS South West London ICB",
+    "glhId": "south-east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000032",
+    "odsCode": "QKS",
+    "icbName": "NHS Kent and Medway ICB",
+    "glhId": "south-east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000036",
+    "odsCode": "QT6",
+    "icbName": "NHS Cornwall and the Isles of Scilly ICB",
+    "glhId": "south-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000037",
+    "odsCode": "QJK",
+    "icbName": "NHS Devon ICB",
+    "glhId": "south-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000038",
+    "odsCode": "QSL",
+    "icbName": "NHS Somerset ICB",
+    "glhId": "south-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000039",
+    "odsCode": "QUY",
+    "icbName": "NHS Bristol, North Somerset and South Gloucestershire ICB",
+    "glhId": "south-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000040",
+    "odsCode": "QOX",
+    "icbName": "NHS Bath and North East Somerset, Swindon and Wiltshire ICB",
+    "glhId": "south-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000041",
+    "odsCode": "QVV",
+    "icbName": "NHS Dorset ICB",
+    "glhId": "south-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000043",
+    "odsCode": "QR1",
+    "icbName": "NHS Gloucestershire ICB",
+    "glhId": "south-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000048",
+    "odsCode": "QE1",
+    "icbName": "NHS Lancashire and South Cumbria ICB",
+    "glhId": "north-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000050",
+    "odsCode": "QHM",
+    "icbName": "NHS North East and North Cumbria ICB",
+    "glhId": "ney",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000051",
+    "odsCode": "QOQ",
+    "icbName": "NHS Humber and North Yorkshire ICB",
+    "glhId": "ney",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000054",
+    "odsCode": "QWO",
+    "icbName": "NHS West Yorkshire ICB",
+    "glhId": "ney",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000055",
+    "odsCode": "QHL",
+    "icbName": "NHS Birmingham and Solihull ICB",
+    "glhId": "central-south",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000057",
+    "odsCode": "QOP",
+    "icbName": "NHS Greater Manchester ICB",
+    "glhId": "north-west",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000058",
+    "odsCode": "QJ2",
+    "icbName": "NHS Derby and Derbyshire ICB",
+    "glhId": "east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000059",
+    "odsCode": "QPM",
+    "icbName": "NHS Northamptonshire ICB",
+    "glhId": "east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000060",
+    "odsCode": "QT1",
+    "icbName": "NHS Nottingham and Nottinghamshire ICB",
+    "glhId": "east",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000061",
+    "odsCode": "QF7",
+    "icbName": "NHS South Yorkshire ICB",
+    "glhId": "ney",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000062",
+    "odsCode": "QUA",
+    "icbName": "NHS Black Country ICB",
+    "glhId": "central-south",
+    "formerIcbs": []
+  },
+  {
+    "icbCode": "E54000065",
+    "odsCode": "S1Y5D",
+    "icbName": "NHS Central East ICB",
+    "glhId": "east",
+    "formerIcbs": [
+      "NHS Hertfordshire and West Essex ICB",
+      "NHS Bedfordshire, Luton and Milton Keynes ICB",
+      "NHS Cambridgeshire and Peterborough ICB"
+    ]
+  },
+  {
+    "icbCode": "E54000066",
+    "odsCode": "D7T5G",
+    "icbName": "NHS Essex ICB",
+    "glhId": "east",
+    "formerIcbs": [
+      "NHS Mid and South Essex ICB"
+    ]
+  },
+  {
+    "icbCode": "E54000067",
+    "odsCode": "QRL",
+    "icbName": "NHS Hampshire and Isle of Wight ICB",
+    "glhId": "central-south",
+    "formerIcbs": [
+      "NHS Hampshire and Isle of Wight ICB",
+      "NHS Frimley ICB (part)"
+    ]
+  },
+  {
+    "icbCode": "E54000068",
+    "odsCode": "T6Y0W",
+    "icbName": "NHS Norfolk and Suffolk ICB",
+    "glhId": "east",
+    "formerIcbs": [
+      "NHS Norfolk and Waveney ICB",
+      "NHS Suffolk and North East Essex ICB"
+    ]
+  },
+  {
+    "icbCode": "E54000069",
+    "odsCode": "S9B9J",
+    "icbName": "NHS Surrey and Sussex ICB",
+    "glhId": "south-east",
+    "formerIcbs": [
+      "NHS Surrey Heartlands ICB",
+      "NHS Sussex ICB",
+      "NHS Frimley ICB (part)"
+    ]
+  },
+  {
+    "icbCode": "E54000070",
+    "odsCode": "S0E4D",
+    "icbName": "NHS Thames Valley ICB",
+    "glhId": "central-south",
+    "formerIcbs": [
+      "NHS Buckinghamshire, Oxfordshire and Berkshire West ICB",
+      "NHS Frimley ICB (part)"
+    ]
+  },
+  {
+    "icbCode": "E54000071",
+    "odsCode": "Z9B2Z",
+    "icbName": "NHS West and North London ICB",
+    "glhId": "north-thames",
+    "formerIcbs": [
+      "NHS North Central London ICB",
+      "NHS North West London ICB"
+    ]
+  }
+]
