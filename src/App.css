@@ -114,20 +114,45 @@
   border: 1px solid var(--border); border-radius: 8px;
   padding: 10px;
 }
-.map__svg { width: 100%; max-width: 340px; height: auto; }
+.map__wrap { position: relative; width: 100%; max-width: 340px; }
+.map__svg { width: 100%; height: auto; display: block; }
 
-.map__region {
-  stroke: #ffffff; stroke-width: 1.5;
-  cursor: pointer; transition: opacity .12s, filter .12s;
+/* ICB polygons — the interactive layer */
+.map__icb {
+  stroke: #ffffff; stroke-width: 0.8;
+  cursor: pointer; transition: opacity .2s, filter .12s;
   outline: none;
 }
-.map__region:hover { filter: brightness(1.06); }
-.map__region:focus-visible { stroke: var(--teal-900); stroke-width: 2.5; }
-.map__region--selected { stroke: var(--teal-900); stroke-width: 2.75; }
-.map__label {
-  font-size: 9px; font-weight: 700; fill: var(--ink);
-  paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px;
-  pointer-events: none;
+.map__icb:hover { filter: brightness(1.08); }
+.map__icb--dim { opacity: 0.7; }
+.map__icb:focus-visible { stroke: var(--teal-900); stroke-width: 2; }
+
+/* GLH group outlines drawn over the ICBs (not interactive) */
+.map__glh { fill: none; stroke: #ffffff; stroke-width: 2.25; pointer-events: none; }
+.map__glh--selected { stroke: var(--teal-900); stroke-width: 3; }
+
+/* Highlight ring for the clicked ICB */
+.map__icbsel { fill: none; stroke: var(--teal-900); stroke-width: 2; pointer-events: none; }
+
+/* Hover tooltip pinned bottom-centre (fingertips-dashboard style) */
+.map__tooltip {
+  position: absolute; z-index: 2;
+  bottom: 34px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 1px; align-items: center;
+  background: rgba(28, 43, 42, 0.88); color: #ffffff;
+  border-radius: 6px; padding: 6px 11px;
+  pointer-events: none; white-space: nowrap; text-align: center;
+}
+.map__tooltip strong { font-size: 11px; font-weight: 700; }
+.map__tooltip span { font-size: 10px; opacity: 0.85; }
+
+/* Caption under the map: current selection */
+.map__caption {
+  min-height: 18px; margin-top: 6px; text-align: center;
+  font-size: 11px; color: var(--muted); font-style: italic;
+}
+.map__caption--active {
+  color: var(--teal-900); font-weight: 600; font-style: normal;
 }
 
 .legend {
@@ -169,6 +194,7 @@
 .detail__head { padding-bottom: 14px; border-bottom: 1px solid var(--border); }
 .detail__name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 4px; }
 .detail__hubname { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.detail__icb { font-size: 11.5px; color: var(--teal-700); font-weight: 600; margin-top: 4px; }
 .detail__prov { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
 .detail__badges { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .badge {

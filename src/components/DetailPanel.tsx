@@ -1,14 +1,21 @@
-import type { Hub } from '../types'
+import type { Hub, IcbInfo } from '../types'
 import PerformanceBars from './PerformanceBars'
 import TrendChart from './TrendChart'
 
-export default function DetailPanel({ hub }: { hub: Hub }) {
+interface Props {
+  hub: Hub
+  /** Set when the hub was reached by clicking an ICB on the map. */
+  icb?: IcbInfo
+}
+
+export default function DetailPanel({ hub, icb }: Props) {
   return (
     <aside className="detail">
       <div className="detail__head">
         <div className="eyebrow">Genomic Laboratory Hub</div>
         <h2 className="detail__name">{hub.name}</h2>
         <div className="detail__hubname">{hub.hubName}</div>
+        {icb && <div className="detail__icb">via {icb.icbName}</div>}
         <div className="detail__prov">
           {hub.provider} · catchment {hub.catchmentM}m
         </div>

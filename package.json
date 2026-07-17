@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:map": "node scripts/build-map.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "mapshaper": "^0.7.38",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   },

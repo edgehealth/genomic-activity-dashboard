@@ -56,6 +56,18 @@ export interface Hub {
   trend: TrendPoint[]
 }
 
+/**
+ * One row of the ICB → GLH mapping (April 2026 ICBs), as held in
+ * src/data/icb-to-glh.json. Mirrors the columns of the SQL table `References.ICB_to_GLH`.
+ */
+export interface IcbInfo {
+  icbCode: string
+  odsCode: string
+  icbName: string
+  glhId: string
+  formerIcbs: string[]
+}
+
 export interface NationalSummary {
   totalTests: number
   hubCount: number

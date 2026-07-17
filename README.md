@@ -18,7 +18,7 @@ npm run build    # production bundle in dist/
 |-------|-----------|-------|
 | Top bar | `Header.tsx` | Source / updated / branding |
 | KPI cards | `KpiRow.tsx` | National headline figures |
-| Regional map | `RegionMap.tsx` | **Schematic** England, shaded by metric, clickable |
+| Regional map | `RegionMap.tsx` | Real ONS ICB (April 2026) boundaries, ICB-level clicks, GLH shading |
 | Metric toggle + ranking | `MapPanel.tsx`, `RankedList.tsx` | Tests / Per 100k / TAT / TAT % |
 | Detail sidebar | `DetailPanel.tsx` | Selected hub stats |
 | Performance-vs-national bars | `PerformanceBars.tsx` | Dashed line = England mean |
@@ -51,14 +51,15 @@ cleanest path:
 Fields to source per hub: total tests, tests per 100k, median TAT, % within TAT
 standard, YoY growth, catchment population, lead provider, accreditations.
 
-### 2. Make the map real
-`RegionMap.tsx` uses **hand-drawn placeholder polygons** — they're interactive
-and colour-coded but *not* geographically accurate. To replace:
-
-- Get GLH / NHS region boundaries as GeoJSON (ONS Open Geography Portal, or NHS
-  England region boundaries) and simplify with mapshaper.
-- Add `react-simple-maps` (or `d3-geo`) and render real `<Geography>` paths,
-  keyed by hub `id`, reusing the existing `scaleColor` shading + click handlers.
+### 2. The map — done
+`RegionMap.tsx` renders the official **ONS ICB (April 2026) boundaries** (36
+post-merger ICBs) grouped into the 7 GLHs, projected with the same linear
+lng/lat → SVG approach as the fingertips-dashboard map (`src/hooks/useMap.ts`).
+Clicking an ICB selects
+it and its parent GLH. The ICB → GLH mapping lives in `src/data/icb-to-glh.json`
+(from the `References.ICB_to_GLH` SQL table); regenerate the boundary layers
+with `npm run build:map`. See `NEXT_STEPS.md` §1 for follow-ups (Dorset's GLH
+assignment, GLH-straddling ICBs, April 2027 mergers).
 
 ### 3. Loading / empty / error states
 Add skeletons for the KPI cards, map and sidebar while data fetches, plus an
