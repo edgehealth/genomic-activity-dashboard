@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Hub, MetricKey } from '../types'
-import { METRICS, metricValue } from '../data/hubs'
+import { METRICS, metricValue } from '../data/metrics'
 import { icbByCode } from '../data/icbToGlh'
 import { MAP_WIDTH, MAP_HEIGHT, useMap } from '../hooks/useMap'
 

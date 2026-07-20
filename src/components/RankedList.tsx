@@ -1,5 +1,5 @@
 import type { Hub, MetricKey } from '../types'
-import { METRICS, metricValue } from '../data/hubs'
+import { METRICS, metricValue } from '../data/metrics'
 
 interface Props {
   hubs: Hub[]

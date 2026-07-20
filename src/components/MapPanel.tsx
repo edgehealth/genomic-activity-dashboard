@@ -1,5 +1,5 @@
 import type { Hub, MetricKey } from '../types'
-import { METRIC_ORDER, METRICS } from '../data/hubs'
+import { METRIC_ORDER, METRICS } from '../data/metrics'
 import RegionMap from './RegionMap'
 import RankedList from './RankedList'
 

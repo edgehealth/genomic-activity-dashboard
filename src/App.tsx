@@ -1,19 +1,18 @@
 import { useState } from 'react'
 import './App.css'
 import type { MetricKey } from './types'
-import { hubs } from './data/hubs'
 import { icbByCode } from './data/icbToGlh'
+import { useGenomics } from './hooks/useGenomics'
 import Header from './components/Header'
 import KpiRow from './components/KpiRow'
 import MapPanel from './components/MapPanel'
 import DetailPanel from './components/DetailPanel'
 
 export default function App() {
-  const [metric, setMetric] = useState<MetricKey>('per100k')
+  const { data, loading, error } = useGenomics()
+  const [metric, setMetric] = useState<MetricKey>('per1k')
   const [selectedId, setSelectedId] = useState<string>('ney')
   const [selectedIcb, setSelectedIcb] = useState<string | null>(null)
-
-  const selectedHub = hubs.find((h) => h.id === selectedId) ?? hubs[0]
 
   /** Map click: select the ICB and jump the dashboard to its parent GLH. */
   const handleSelectIcb = (icbCode: string, glhId: string) => {
@@ -41,20 +40,36 @@ export default function App() {
             </p>
           </div>
 
-          <KpiRow />
+          {loading && <div className="state state--loading">Loading genomics activity…</div>}
+          {error && (
+            <div className="state state--error">
+              Couldn’t load data: {error}
+            </div>
+          )}
 
-          <MapPanel
-            hubs={hubs}
-            metric={metric}
-            selectedId={selectedId}
-            selectedIcb={selectedIcb}
-            onSelectMetric={setMetric}
-            onSelectHub={handleSelectHub}
-            onSelectIcb={handleSelectIcb}
-          />
+          {data && (
+            <>
+              <KpiRow national={data.national} />
+              <MapPanel
+                hubs={data.hubs}
+                metric={metric}
+                selectedId={selectedId}
+                selectedIcb={selectedIcb}
+                onSelectMetric={setMetric}
+                onSelectHub={handleSelectHub}
+                onSelectIcb={handleSelectIcb}
+              />
+            </>
+          )}
         </main>
 
-        <DetailPanel hub={selectedHub} icb={selectedIcb ? icbByCode[selectedIcb] : undefined} />
+        {data && (
+          <DetailPanel
+            hub={data.hubs.find((h) => h.id === selectedId) ?? data.hubs[0]}
+            national={data.national}
+            icb={selectedIcb ? icbByCode[selectedIcb] : undefined}
+          />
+        )}
       </div>
     </div>
   )
