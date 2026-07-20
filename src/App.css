@@ -260,3 +260,19 @@
   .mappanel__body { grid-template-columns: 1fr; }
   .kpirow { grid-template-columns: 1fr 1fr; }
 }
+
+/* Data load states ---------------------------------------------------------*/
+.state {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+.state--loading { color: var(--muted); }
+.state--error {
+  border-color: #e3b7b1;
+  background: #fbf2f0;
+  color: #8a2f22;
+}

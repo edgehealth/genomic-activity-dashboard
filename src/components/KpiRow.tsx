@@ -1,4 +1,6 @@
-import { national } from '../data/hubs'
+import type { NationalSummary } from '../types'
+
+const fmt = (v: number) => Math.round(v).toLocaleString('en-GB')
 
 interface Kpi {
   label: string
@@ -8,34 +10,31 @@ interface Kpi {
   accent?: boolean
 }
 
-const kpis: Kpi[] = [
-  {
-    label: 'Total tests, 12 months',
-    value: '487',
-    unit: 'k',
-    foot: `across ${national.hubCount} Genomic Laboratory Hubs`,
-  },
-  {
-    label: 'Tests per 100k',
-    value: national.testsPer100k.toLocaleString('en-GB'),
-    foot: 'England population-weighted mean',
-  },
-  {
-    label: 'Median TAT',
-    value: national.medianTat.toFixed(1),
-    unit: 'd',
-    foot: `${national.tatPct}% within standard`,
-  },
-  {
-    label: 'Year-on-year growth',
-    value: `+${national.yoyGrowth}`,
-    unit: '%',
-    foot: 'test volume vs prior 12m',
-    accent: true,
-  },
-]
+export default function KpiRow({ national }: { national: NationalSummary }) {
+  const kpis: Kpi[] = [
+    {
+      label: 'Total activity, 12 months',
+      value: fmt(national.totalActivity),
+      foot: `across ${national.hubCount} Genomic Laboratory Hubs`,
+    },
+    {
+      label: 'Cancer activity, 12 months',
+      value: fmt(national.cancerActivity),
+      foot: 'national total',
+    },
+    {
+      label: 'Rare & inherited disease, 12 months',
+      value: fmt(national.rareActivity),
+      foot: 'national total',
+    },
+    {
+      label: 'Activity per 1,000 population',
+      value: national.per1k.toFixed(1),
+      foot: 'England population-weighted mean',
+      accent: true,
+    },
+  ]
 
-export default function KpiRow() {
   return (
     <div className="kpirow">
       {kpis.map((k) => (

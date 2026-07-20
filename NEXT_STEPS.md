@@ -64,6 +64,17 @@ today — switch to per-ICB shading in `RegionMap.tsx` if ICB-level data arrives
 total tests · tests per 100k · median TAT · % within TAT standard · YoY growth ·
 catchment population · lead provider · accreditations · 12-month trend.
 
+### TODO — outstanding data wiring
+- **Wire up the `sub_category` breakdowns.** The API returns `sub_category` on every row
+  (cancer type / specialist disease category / age / gene site), but `transform.ts` currently
+  ignores it — it only sums numerators per GLH/national. Surface these breakdowns so the UI can
+  split activity by **cancer type vs. rare-disease type**. Decide which metrics carry a usable
+  `sub_category` and add the aggregation + a type on `Hub`/`NationalSummary`.
+- **Check the 12-month activity trend.** `buildGenomicsData` builds `trend` from the latest 12
+  `gen_06` months (`trendMonths` + `natByMonth`/`hubByGlhMonth`). Verify against the raw feed that
+  the months line up, that missing months fall back to 0 correctly, and that the labels render in
+  the right order now that `time_period` is epoch-ms (see the `monthLabel` UTC fix in `transform.ts`).
+
 ### Known data corrections
 - **Central & South lead provider** in `hubs.ts` says *"Oxford University Hospitals NHS FT"* —
   the official lead is **"Birmingham Women's and Children's NHS FT"**. Fix this line. (The other

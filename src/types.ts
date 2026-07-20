@@ -1,11 +1,19 @@
 // ---------------------------------------------------------------------------
 // Domain types for the Genomic Testing Activity dashboard.
-// All values are placeholders today — see src/data/hubs.ts for where real
-// figures get wired in.
+// Values are sourced live from the Dashboard Data API (/v1/genomics), which
+// serves the long-format `vw_genomics_metrics` view. See src/data/transform.ts
+// for how raw metric rows become the Hub[] + NationalSummary the UI consumes.
 // ---------------------------------------------------------------------------
 
-/** The four metrics the map / ranking can be shaded by. */
-export type MetricKey = 'tests' | 'per100k' | 'tat' | 'tatPct'
+/**
+ * The metrics the map / ranking can be shaded by. All are activity measures
+ * from vw_genomics_metrics (there is no turnaround-time data in the source):
+ *   total  — total genomic activity (cancer + rare disease), gen_06 / gen_03
+ *   cancer — cancer activity, gen_04
+ *   rare   — rare & inherited disease activity, gen_05
+ *   per1k  — activity per 1,000 population, gen_07 (cancer) + gen_12 (rare)
+ */
+export type MetricKey = 'total' | 'cancer' | 'rare' | 'per1k'
 
 export interface MetricDef {
   key: MetricKey
@@ -13,7 +21,8 @@ export interface MetricDef {
   label: string
   /** Longer label used in headings. */
   longLabel: string
-  /** true when a lower value is the "better" direction (e.g. turnaround time). */
+  /** true when a lower value is the "better" direction. None today, but the
+   *  ranking/perf code still honours it, so it stays part of the contract. */
   lowerIsBetter: boolean
   /** How to render a raw value for this metric. */
   format: (v: number) => string
@@ -34,25 +43,25 @@ export interface Hub {
   hubName: string
   /** Lead provider trust. */
   provider: string
-  /** Catchment population in millions. */
+  /** Catchment population in millions (from the GLH population denominator). */
   catchmentM: number
   accreditations: string[]
 
-  totalTests: number
-  testsPer100k: number
-  /** Median turnaround time, days. */
-  medianTat: number
-  /** % of tests within the TAT standard. */
-  tatPct: number
-  /** Year-on-year growth in test volume, %. */
+  /** Total activity over the latest 12 months (cancer + rare). */
+  totalActivity: number
+  /** Cancer activity over the latest 12 months. */
+  cancerActivity: number
+  /** Rare & inherited disease activity over the latest 12 months. */
+  rareActivity: number
+  /** Activity per 1,000 population, latest full year. */
+  per1k: number
+
+  /** Year-on-year growth in total activity, %. 0 when <24 months of data. */
   yoyGrowth: number
+  /** per-1,000 rate vs the national mean, %. */
+  perVsNat: number
 
-  /** YoY change for tests per 100k, %. */
-  per100kYoy: number
-  /** tests per 100k vs the national mean, %. */
-  per100kVsNat: number
-
-  /** Rough centroid on the schematic map, for future label placement. */
+  /** 12-month total-activity trend, this hub vs England. */
   trend: TrendPoint[]
 }
 
@@ -69,10 +78,10 @@ export interface IcbInfo {
 }
 
 export interface NationalSummary {
-  totalTests: number
+  totalActivity: number
+  cancerActivity: number
+  rareActivity: number
   hubCount: number
-  testsPer100k: number
-  medianTat: number
-  tatPct: number
+  per1k: number
   yoyGrowth: number
 }
