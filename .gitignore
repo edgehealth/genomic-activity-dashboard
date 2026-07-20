@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Local env — real secrets. Commit .env.example (template) only.
+# Local env — real secrets live in GitHub Actions secrets. Commit .env.example only.
 .env
 .env.*
 !.env.example
