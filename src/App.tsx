@@ -7,6 +7,7 @@ import Header from './components/Header'
 import KpiRow from './components/KpiRow'
 import MapPanel from './components/MapPanel'
 import DetailPanel from './components/DetailPanel'
+import GenePanel from './components/GenePanel'
 import { DetailPanelSkeleton, KpiRowSkeleton, MapPanelSkeleton } from './components/Skeletons'
 
 export default function App() {
@@ -88,6 +89,12 @@ export default function App() {
                 onSelectBasis={setBasis}
                 onSelectHub={handleSelectHub}
                 onSelectIcb={handleSelectIcb}
+              />
+              <GenePanel
+                genes={data.genes}
+                selectedHubName={
+                  data.hubs.find((h) => h.id === selectedId)?.name ?? 'no hub selected'
+                }
               />
             </>
           )}

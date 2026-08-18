@@ -68,19 +68,68 @@ async function fetchPage(page: number): Promise<GenomicsResponse> {
   return (await response.json()) as GenomicsResponse
 }
 
+/** Stable identity of a row, for de-duplicating overlapping pages. */
+function rowKey(r: GenomicsRow): string {
+  return [
+    r.metric_id,
+    r.glh ?? '',
+    r.icb ?? '',
+    r.sub_category ?? '',
+    r.gene ?? '',
+    r.time_grain,
+    r.time_period,
+    r.numerator,
+    r.denominator ?? '',
+  ].join('')
+}
+
 /**
  * Fetch every genomics metric row, following pagination until all pages are in.
  * The view is small (a few thousand rows), so one or two pages is typical.
+ *
+ * ⚠ THE API'S PAGINATION IS NOT STABLE. Observed on /v1/genomics: page 2 re-returns
+ * rows already served on page 1 (2,122 of them, all gen_11), and which rows you get
+ * depends on page_size — at page_size=3000 the whole 2020 gene slice is absent while
+ * `total_records` still reports 7,394. That is the signature of OFFSET paging over a
+ * query with no deterministic ORDER BY.
+ *
+ * Consequences we handle here:
+ *   • duplicates — de-duplicated below, because every consumer SUMS numerators and
+ *     double-counted rows silently inflate totals (gene volumes most of all).
+ *   • dropped rows — cannot be fixed client-side. If the distinct count doesn't match
+ *     `total_records` we warn, so the gap is visible rather than silent.
+ *
+ * Remove this once the API paginates over a stable key.
  */
 export async function getGenomicsMetrics(): Promise<GenomicsRow[]> {
   assertConfigured()
 
   const first = await fetchPage(1)
-  const rows = [...first.data]
+  const raw = [...first.data]
 
   for (let page = 2; page <= first.pagination.total_pages; page++) {
     const next = await fetchPage(page)
-    rows.push(...next.data)
+    raw.push(...next.data)
+  }
+
+  const seen = new Set<string>()
+  const rows: GenomicsRow[] = []
+  for (const r of raw) {
+    const key = rowKey(r)
+    if (seen.has(key)) continue
+    seen.add(key)
+    rows.push(r)
+  }
+
+  const duplicates = raw.length - rows.length
+  const reported = first.pagination.total_records
+  if (duplicates > 0 || rows.length !== reported) {
+    console.warn(
+      `[genomicsApi] Pagination returned ${raw.length} rows for a reported ${reported} ` +
+        `total_records; ${duplicates} were duplicates, leaving ${rows.length} distinct. ` +
+        'The API is paging without a stable sort key, so rows can also be missed — ' +
+        'treat totals as provisional and ask the data owner to add a deterministic ORDER BY.',
+    )
   }
 
   return rows
