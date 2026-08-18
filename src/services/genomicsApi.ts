@@ -58,7 +58,10 @@ async function fetchPage(page: number): Promise<GenomicsResponse> {
     `${API_BASE_URL}/v1/genomics?code=${encodeURIComponent(API_KEY)}` +
     `&page=${page}&page_size=${PAGE_SIZE}`
 
-  const response = await fetch(url, { headers: { Accept: 'application/json' } })
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+  })
   if (!response.ok) {
     throw new Error(`Genomics API HTTP ${response.status}`)
   }
