@@ -25,7 +25,7 @@ export default function TrendChart({ data, metric }: Props) {
     <div className="trend">
       <div className="trend__legend">
         <span className="trend__key trend__key--hub">This hub</span>
-        <span className="trend__key trend__key--nat">National</span>
+        <span className="trend__key trend__key--nat">England average</span>
       </div>
       <ResponsiveContainer width="100%" height={150}>
         <LineChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: -8 }}>
@@ -65,7 +65,7 @@ export default function TrendChart({ data, metric }: Props) {
           <Line
             type="monotone"
             dataKey="national"
-            name="National"
+            name="England average"
             stroke="#b9c2bc"
             strokeWidth={1.5}
             strokeDasharray="4 3"

@@ -171,11 +171,14 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
     const pop = popByGlh.get(glhId) ?? 0
 
     const counts = (key: 'total' | 'cancer' | 'rare'): TrendPoint[] =>
-      trendMonths.map((period) => ({
-        month: monthLabel(period),
-        hub: monthly[key].hub.get(`${glhId}|${period}`) ?? null,
-        national: monthly[key].national.get(period) ?? null,
-      }))
+      trendMonths.map((period) => {
+        const natTotal = monthly[key].national.get(period)
+        return {
+          month: monthLabel(period),
+          hub: monthly[key].hub.get(`${glhId}|${period}`) ?? null,
+          national: natTotal != null ? Math.round(natTotal / GLH_META.length) : null,
+        }
+      })
 
     const per1k: TrendPoint[] = trendMonths.map((period) => {
       const hubCount = monthly.total.hub.get(`${glhId}|${period}`)

@@ -17,7 +17,7 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     format: intFmt,
     trend: {
       title: '12-month activity trend',
-      subtitle: 'Total genomic activity over time, this hub vs England.',
+      subtitle: 'Total genomic activity over time, this hub vs the England average.',
       axisLabel: 'Tests per month',
       unit: 'tests',
     },
@@ -30,7 +30,7 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     format: intFmt,
     trend: {
       title: '12-month cancer activity trend',
-      subtitle: 'Cancer genomic activity over time, this hub vs England.',
+      subtitle: 'Cancer genomic activity over time, this hub vs the England average.',
       axisLabel: 'Cancer tests per month',
       unit: 'tests',
     },
@@ -43,7 +43,7 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     format: intFmt,
     trend: {
       title: '12-month rare disease activity trend',
-      subtitle: 'Rare & inherited disease activity over time, this hub vs England.',
+      subtitle: 'Rare & inherited disease activity over time, this hub vs the England average.',
       axisLabel: 'Rare disease tests per month',
       unit: 'tests',
     },
@@ -56,7 +56,7 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     format: (v) => v.toFixed(1),
     trend: {
       title: '12-month activity per 1,000 trend',
-      subtitle: 'Monthly activity per 1,000 population, this hub vs England.',
+      subtitle: 'Monthly activity per 1,000 population, this hub vs the England average.',
       axisLabel: 'Tests per 1,000 per month',
       unit: 'per 1,000',
     },
