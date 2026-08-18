@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Hub, MetricKey } from '../types'
 import { METRICS, metricValue } from '../data/metrics'
 import { icbByCode } from '../data/icbToGlh'
@@ -24,6 +24,44 @@ function scaleColor(t: number): string {
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
 }
 
+// ---------------------------------------------------------------------------
+// Zoom / pan — the viewBox is the zoom state. Zooming shrinks the viewBox
+// around a focal point (cursor position or view centre); panning translates
+// it. MIN_SCALE keeps the whole map in frame; MAX_SCALE caps how far in a
+// user can go on the smallest ICB.
+// ---------------------------------------------------------------------------
+
+const MIN_SCALE = 1
+const MAX_SCALE = 8
+const WHEEL_ZOOM_FACTOR = 1.2
+const BUTTON_ZOOM_FACTOR = 1.5
+const DRAG_THRESHOLD_PX = 3
+
+interface ViewBox {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+const HOME_VIEW: ViewBox = { x: 0, y: 0, w: MAP_WIDTH, h: MAP_HEIGHT }
+
+function clampViewBox(vb: ViewBox): ViewBox {
+  const w = Math.min(HOME_VIEW.w, Math.max(HOME_VIEW.w / MAX_SCALE, vb.w))
+  const h = w * (HOME_VIEW.h / HOME_VIEW.w)
+  const x = Math.min(HOME_VIEW.w - w, Math.max(0, vb.x))
+  const y = Math.min(HOME_VIEW.h - h, Math.max(0, vb.y))
+  return { x, y, w, h }
+}
+
+function zoomViewBox(vb: ViewBox, factor: number, focusX: number, focusY: number): ViewBox {
+  const w = vb.w / factor
+  const h = vb.h / factor
+  const ratioX = (focusX - vb.x) / vb.w
+  const ratioY = (focusY - vb.y) / vb.h
+  return clampViewBox({ x: focusX - ratioX * w, y: focusY - ratioY * h, w, h })
+}
+
 interface Props {
   hubs: Hub[]
   metric: MetricKey
@@ -35,6 +73,77 @@ interface Props {
 export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSelectIcb }: Props) {
   const { icbPaths, glhPaths } = useMap()
   const [hoveredIcb, setHoveredIcb] = useState<string | null>(null)
+
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [viewBox, setViewBox] = useState<ViewBox>(HOME_VIEW)
+  const viewBoxRef = useRef(viewBox)
+  useEffect(() => {
+    viewBoxRef.current = viewBox
+  }, [viewBox])
+
+  const dragRef = useRef<{ startX: number; startY: number; startView: ViewBox } | null>(null)
+  const wasDraggedRef = useRef(false)
+  const [isDragging, setIsDragging] = useState(false)
+
+  // Wheel zoom needs preventDefault to stop page scroll, but React's
+  // synthetic onWheel is passive by default — attach a native listener
+  // instead so the browser actually honours it.
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = svg.getBoundingClientRect()
+      const vb = viewBoxRef.current
+      const focusX = vb.x + ((e.clientX - rect.left) / rect.width) * vb.w
+      const focusY = vb.y + ((e.clientY - rect.top) / rect.height) * vb.h
+      const factor = e.deltaY < 0 ? WHEEL_ZOOM_FACTOR : 1 / WHEEL_ZOOM_FACTOR
+      setViewBox((prev) => zoomViewBox(prev, factor, focusX, focusY))
+    }
+    svg.addEventListener('wheel', handleWheel, { passive: false })
+    return () => svg.removeEventListener('wheel', handleWheel)
+  }, [])
+
+  const scale = MAP_WIDTH / viewBox.w
+  const canZoomIn = scale < MAX_SCALE - 0.01
+  const canZoomOut = scale > MIN_SCALE + 0.01
+
+  function zoomByButton(factor: number) {
+    const vb = viewBoxRef.current
+    setViewBox(zoomViewBox(vb, factor, vb.x + vb.w / 2, vb.y + vb.h / 2))
+  }
+
+  function resetZoom() {
+    setViewBox(HOME_VIEW)
+  }
+
+  function handlePointerDown(e: React.PointerEvent<SVGSVGElement>) {
+    if (e.button !== 0) return
+    wasDraggedRef.current = false
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startView: viewBoxRef.current }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
+    const drag = dragRef.current
+    if (!drag) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const dxClient = e.clientX - drag.startX
+    const dyClient = e.clientY - drag.startY
+    if (Math.abs(dxClient) > DRAG_THRESHOLD_PX || Math.abs(dyClient) > DRAG_THRESHOLD_PX) {
+      wasDraggedRef.current = true
+      setIsDragging(true)
+    }
+    const dx = (dxClient / rect.width) * drag.startView.w
+    const dy = (dyClient / rect.height) * drag.startView.h
+    setViewBox(clampViewBox({ ...drag.startView, x: drag.startView.x - dx, y: drag.startView.y - dy }))
+  }
+
+  function handlePointerUp(e: React.PointerEvent<SVGSVGElement>) {
+    dragRef.current = null
+    setIsDragging(false)
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }
 
   const values = hubs.map((h) => metricValue(h, metric))
   const min = Math.min(...values)
@@ -57,11 +166,16 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
   return (
     <div className="map__wrap">
       <svg
-        className="map__svg"
-        viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+        ref={svgRef}
+        className={`map__svg${isDragging ? ' map__svg--dragging' : ''}`}
+        viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
         preserveAspectRatio="xMidYMid meet"
         role="group"
-        aria-label="Map of England's 36 Integrated Care Boards, grouped into the 7 Genomic Laboratory Hubs"
+        aria-label="Map of England's 36 Integrated Care Boards, grouped into the 7 Genomic Laboratory Hubs. Scroll or use the zoom controls to zoom in."
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
         {/* ICB polygons — the interactive layer */}
         {icbPaths.map(({ props, d }) => {
@@ -77,7 +191,10 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
               role="button"
               aria-label={`${props.icbName}, ${hub?.name ?? 'unknown'} hub`}
               aria-pressed={props.icbCode === selectedIcb}
-              onClick={() => onSelectIcb(props.icbCode, props.glhId)}
+              onClick={() => {
+                if (wasDraggedRef.current) return
+                onSelectIcb(props.icbCode, props.glhId)
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
@@ -106,6 +223,41 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
         {/* Selected ICB outline, drawn last so it sits above the GLH lines */}
         {selectedPath && <path className="map__icbsel" d={selectedPath.d} />}
       </svg>
+
+      {/* Zoom controls, pinned top-right of the map */}
+      <div className="map__zoom" role="group" aria-label="Map zoom controls">
+        <button
+          type="button"
+          className="map__zoombtn"
+          onClick={() => zoomByButton(BUTTON_ZOOM_FACTOR)}
+          disabled={!canZoomIn}
+          aria-label="Zoom in"
+          title="Zoom in"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="map__zoombtn"
+          onClick={() => zoomByButton(1 / BUTTON_ZOOM_FACTOR)}
+          disabled={!canZoomOut}
+          aria-label="Zoom out"
+          title="Zoom out"
+        >
+          −
+        </button>
+        {canZoomOut && (
+          <button
+            type="button"
+            className="map__zoombtn map__zoombtn--reset"
+            onClick={resetZoom}
+            aria-label="Reset zoom"
+            title="Reset zoom"
+          >
+            ⟲
+          </button>
+        )}
+      </div>
 
       {/* Hover tooltip, pinned bottom-centre like the fingertips map */}
       {hovered && (
