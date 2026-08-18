@@ -1,4 +1,4 @@
-import type { Hub, NationalSummary, TrendPoint } from '../types'
+import type { Hub, MetricKey, NationalSummary, TrendPoint } from '../types'
 import type { GenomicsRow } from '../services/genomicsApi'
 import { GLH_META, resolveGlhId } from './glhMeta'
 
@@ -46,6 +46,39 @@ function sumPerGlh(rows: GenomicsRow[], metricId: string, periods: Set<number>):
     out.set(id, (out.get(id) ?? 0) + num(r.numerator))
   }
   return out
+}
+
+const round1 = (v: number): number => Number(v.toFixed(1))
+
+// ---------------------------------------------------------------------------
+// Monthly series for the trend panel
+// ---------------------------------------------------------------------------
+// Each count metric has a per-GLH id and a matching national id, so the trend
+// panel can plot hub vs England on whichever metric is selected.
+const COUNT_SOURCES = {
+  total: { hub: 'gen_06', national: 'gen_03' },
+  cancer: { hub: 'gen_04', national: 'gen_01' },
+  rare: { hub: 'gen_05', national: 'gen_02' },
+} as const
+
+interface MonthlySeries {
+  hub: Map<string, number>
+  national: Map<number, number>
+}
+
+/** Monthly hub + national values for one count metric pair. */
+function monthlySeries(rows: GenomicsRow[], src: { hub: string; national: string }): MonthlySeries {
+  const hub = new Map<string, number>()
+  const national = new Map<number, number>()
+  for (const r of rows) {
+    if (r.metric_id === src.national) {
+      national.set(r.time_period, num(r.numerator))
+    } else if (r.metric_id === src.hub) {
+      const id = resolveGlhId(r.glh)
+      if (id) hub.set(`${id}|${r.time_period}`, num(r.numerator))
+    }
+  }
+  return { hub, national }
 }
 
 /** Sum numerator (national metric, glh is null) over an allowed set of periods. */
@@ -120,18 +153,44 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
       : 0,
   }
 
-  // --- National monthly totals for the trend line (per month) ---
-  const natByMonth = new Map<number, number>()
-  for (const r of rows) {
-    if (r.metric_id === 'gen_03') natByMonth.set(r.time_period, num(r.numerator))
+  // --- Monthly series behind the trend panel, one per metric ---------------
+  // The panel plots whichever metric is selected on the map toggle, so every
+  // metric needs its own hub + England series.
+  const monthly: Record<'total' | 'cancer' | 'rare', MonthlySeries> = {
+    total: monthlySeries(rows, COUNT_SOURCES.total),
+    cancer: monthlySeries(rows, COUNT_SOURCES.cancer),
+    rare: monthlySeries(rows, COUNT_SOURCES.rare),
   }
-  // Hub monthly totals for the trend line: gen_06 per (glh, month).
-  const hubByGlhMonth = new Map<string, number>() // key `${id}|${period}`
-  for (const r of rows) {
-    if (r.metric_id !== 'gen_06') continue
-    const id = resolveGlhId(r.glh)
-    if (!id) continue
-    hubByGlhMonth.set(`${id}|${r.time_period}`, num(r.numerator))
+
+  // England denominator for the per-1,000 series: the population of the hubs
+  const ratedGlhIds = GLH_META.map((m) => m.id).filter((id) => (popByGlh.get(id) ?? 0) > 0)
+  const ratedPop = ratedGlhIds.reduce((sum, id) => sum + (popByGlh.get(id) ?? 0), 0)
+
+  /** Build the four trend series for one hub. */
+  function buildTrends(glhId: string): Record<MetricKey, TrendPoint[]> {
+    const pop = popByGlh.get(glhId) ?? 0
+
+    const counts = (key: 'total' | 'cancer' | 'rare'): TrendPoint[] =>
+      trendMonths.map((period) => ({
+        month: monthLabel(period),
+        hub: monthly[key].hub.get(`${glhId}|${period}`) ?? null,
+        national: monthly[key].national.get(period) ?? null,
+      }))
+
+    const per1k: TrendPoint[] = trendMonths.map((period) => {
+      const hubCount = monthly.total.hub.get(`${glhId}|${period}`)
+      const natCount = ratedGlhIds.reduce(
+        (sum, id) => sum + (monthly.total.hub.get(`${id}|${period}`) ?? 0),
+        0,
+      )
+      return {
+        month: monthLabel(period),
+        hub: pop > 0 && hubCount != null ? round1((hubCount / pop) * 1000) : null,
+        national: ratedPop > 0 ? round1((natCount / ratedPop) * 1000) : null,
+      }
+    })
+
+    return { total: counts('total'), cancer: counts('cancer'), rare: counts('rare'), per1k }
   }
 
   // --- Assemble the 7 hubs (always all of them; missing data → 0) ---
@@ -141,12 +200,6 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
     const per1k = pop > 0 ? (rateNum / pop) * 1000 : 0
     const prev = totalPrevByGlh.get(meta.id) ?? 0
     const total = totalByGlh.get(meta.id) ?? 0
-
-    const trend: TrendPoint[] = trendMonths.map((period) => ({
-      month: monthLabel(period),
-      hub: hubByGlhMonth.get(`${meta.id}|${period}`) ?? 0,
-      national: natByMonth.get(period) ?? 0,
-    }))
 
     return {
       id: meta.id,
@@ -161,7 +214,7 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
       per1k: Number(per1k.toFixed(1)),
       yoyGrowth: hasYoY && prev > 0 ? Number((((total - prev) / prev) * 100).toFixed(1)) : 0,
       perVsNat: national.per1k > 0 ? Number((((per1k - national.per1k) / national.per1k) * 100).toFixed(1)) : 0,
-      trend,
+      trends: buildTrends(meta.id),
     }
   })
 

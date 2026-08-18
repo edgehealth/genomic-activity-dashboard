@@ -15,6 +15,12 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     longLabel: 'Total activity (12m)',
     lowerIsBetter: false,
     format: intFmt,
+    trend: {
+      title: '12-month activity trend',
+      subtitle: 'Total genomic activity over time, this hub vs England.',
+      axisLabel: 'Tests per month',
+      unit: 'tests',
+    },
   },
   cancer: {
     key: 'cancer',
@@ -22,6 +28,12 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     longLabel: 'Cancer activity (12m)',
     lowerIsBetter: false,
     format: intFmt,
+    trend: {
+      title: '12-month cancer activity trend',
+      subtitle: 'Cancer genomic activity over time, this hub vs England.',
+      axisLabel: 'Cancer tests per month',
+      unit: 'tests',
+    },
   },
   rare: {
     key: 'rare',
@@ -29,6 +41,12 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     longLabel: 'Rare disease activity (12m)',
     lowerIsBetter: false,
     format: intFmt,
+    trend: {
+      title: '12-month rare disease activity trend',
+      subtitle: 'Rare & inherited disease activity over time, this hub vs England.',
+      axisLabel: 'Rare disease tests per month',
+      unit: 'tests',
+    },
   },
   per1k: {
     key: 'per1k',
@@ -36,6 +54,12 @@ export const METRICS: Record<MetricKey, MetricDef> = {
     longLabel: 'Activity per 1,000 population',
     lowerIsBetter: false,
     format: (v) => v.toFixed(1),
+    trend: {
+      title: '12-month activity per 1,000 trend',
+      subtitle: 'Monthly activity per 1,000 population, this hub vs England.',
+      axisLabel: 'Tests per 1,000 per month',
+      unit: 'per 1,000',
+    },
   },
 }
 

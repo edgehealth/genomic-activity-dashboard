@@ -26,13 +26,27 @@ export interface MetricDef {
   lowerIsBetter: boolean
   /** How to render a raw value for this metric. */
   format: (v: number) => string
+  /** Labelling for the 12-month trend panel when this metric is selected. */
+  trend: TrendLabels
+}
+
+export interface TrendLabels {
+  /** Panel heading, e.g. "12-month cancer activity trend". */
+  title: string
+  /** One line under the heading explaining what is plotted. */
+  subtitle: string
+  /** Y-axis label, carrying the units. */
+  axisLabel: string
+  /** Unit suffix appended to tooltip values, e.g. "tests". */
+  unit: string
 }
 
 export interface TrendPoint {
   /** Month label, e.g. "Aug 25". */
   month: string
-  hub: number
-  national: number
+  /** null when the feed can't supply a value for this hub/month. */
+  hub: number | null
+  national: number | null
 }
 
 export interface Hub {
@@ -61,8 +75,15 @@ export interface Hub {
   /** per-1,000 rate vs the national mean, %. */
   perVsNat: number
 
-  /** 12-month total-activity trend, this hub vs England. */
-  trend: TrendPoint[]
+  /**
+   * 12-month trend per metric, this hub vs England — the trend panel plots
+   * whichever series matches the metric selected on the map toggle.
+   *
+   * total/cancer/rare come straight from the monthly count metrics. per1k has
+   * no monthly source in the feed (gen_07/gen_12 are yearly), so it is derived
+   * as monthly activity ÷ catchment population — see buildTrends().
+   */
+  trends: Record<MetricKey, TrendPoint[]>
 }
 
 /**

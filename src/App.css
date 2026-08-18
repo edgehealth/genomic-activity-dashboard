@@ -293,3 +293,9 @@
   background: #fbf2f0;
   color: #8a2f22;
 }
+
+/* Note under the trend chart when a hub has no series for the metric. */
+.trend__note {
+  font-size: 10.5px; color: var(--muted); font-style: italic;
+  margin-top: 6px; text-align: center;
+}

@@ -67,6 +67,7 @@ export default function App() {
           <DetailPanel
             hub={data.hubs.find((h) => h.id === selectedId) ?? data.hubs[0]}
             national={data.national}
+            metric={metric}
             icb={selectedIcb ? icbByCode[selectedIcb] : undefined}
           />
         )}

@@ -1,17 +1,21 @@
-import type { Hub, IcbInfo, NationalSummary } from '../types'
+import type { Hub, IcbInfo, MetricKey, NationalSummary } from '../types'
+import { METRICS } from '../data/metrics'
 import PerformanceBars from './PerformanceBars'
 import TrendChart from './TrendChart'
 
 interface Props {
   hub: Hub
   national: NationalSummary
+  /** The metric selected on the map toggle the trend panel follows it. */
+  metric: MetricKey
   /** Set when the hub was reached by clicking an ICB on the map. */
   icb?: IcbInfo
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString('en-GB')
 
-export default function DetailPanel({ hub, national, icb }: Props) {
+export default function DetailPanel({ hub, national, metric, icb }: Props) {
+  const trend = METRICS[metric].trend
   return (
     <aside className="detail">
       <div className="detail__head">
@@ -63,9 +67,9 @@ export default function DetailPanel({ hub, national, icb }: Props) {
       </div>
 
       <div className="detail__section">
-        <h4 className="detail__sectitle">12-month activity trend</h4>
-        <p className="detail__secsub">Total genomic activity over time, this hub vs England.</p>
-        <TrendChart data={hub.trend} />
+        <h4 className="detail__sectitle">{trend.title}</h4>
+        <p className="detail__secsub">{trend.subtitle}</p>
+        <TrendChart data={hub.trends[metric]} metric={metric} />
       </div>
     </aside>
   )
