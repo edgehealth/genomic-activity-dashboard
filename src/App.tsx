@@ -7,6 +7,7 @@ import Header from './components/Header'
 import KpiRow from './components/KpiRow'
 import MapPanel from './components/MapPanel'
 import DetailPanel from './components/DetailPanel'
+import GenePanel from './components/GenePanel'
 
 export default function App() {
   const { data, loading, error } = useGenomics()
@@ -58,6 +59,12 @@ export default function App() {
                 onSelectMetric={setMetric}
                 onSelectHub={handleSelectHub}
                 onSelectIcb={handleSelectIcb}
+              />
+              <GenePanel
+                genes={data.genes}
+                selectedHubName={
+                  data.hubs.find((h) => h.id === selectedId)?.name ?? 'no hub selected'
+                }
               />
             </>
           )}

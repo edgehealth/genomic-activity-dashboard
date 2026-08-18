@@ -98,6 +98,42 @@ export interface IcbInfo {
   formerIcbs: string[]
 }
 
+/**
+ * One (gene × cancer type) cell of gene-level testing activity, from gen_11.
+ *
+ * ⚠ gen_11 carries NO glh/icb — it is England-level only, so gene activity
+ * cannot be broken down or filtered by GLH. It is also yearly and covers
+ * 2016–2021, a different period from the monthly activity metrics.
+ */
+export interface GeneRow {
+  gene: string
+  /** Cancer type these tests sit under (gen_11 sub_category). */
+  cancerType: string
+  /** Tests including this gene, in this year and cancer type. */
+  tests: number
+  /** Total tests for the cancer type that year — the gen_11 denominator. */
+  cancerTypeTests: number | null
+}
+
+export interface GeneYear {
+  /** Calendar year the yearly row falls in, e.g. 2020. */
+  year: number
+  /** true when this year is missing cancer types that other years have. */
+  partial: boolean
+  /** Cancer types present in this year. */
+  cancerTypes: string[]
+  rows: GeneRow[]
+}
+
+export interface GeneActivity {
+  /** Yearly slices, latest first. */
+  years: GeneYear[]
+  /** Latest year with complete cancer-type coverage — the default selection. */
+  defaultYear: number | null
+  /** Every cancer type seen across all years, for the filter control. */
+  cancerTypes: string[]
+}
+
 export interface NationalSummary {
   totalActivity: number
   cancerActivity: number

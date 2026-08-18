@@ -1,4 +1,12 @@
-import type { Hub, MetricKey, NationalSummary, TrendPoint } from '../types'
+import type {
+  GeneActivity,
+  GeneRow,
+  GeneYear,
+  Hub,
+  MetricKey,
+  NationalSummary,
+  TrendPoint,
+} from '../types'
 import type { GenomicsRow } from '../services/genomicsApi'
 import { GLH_META, resolveGlhId } from './glhMeta'
 
@@ -50,6 +58,15 @@ function sumPerGlh(rows: GenomicsRow[], metricId: string, periods: Set<number>):
 
 const round1 = (v: number): number => Number(v.toFixed(1))
 
+const warned = new Set<string>()
+
+/** console.warn once per distinct key, so a per-row problem logs once. */
+function warnOnce(key: string, message: string): void {
+  if (warned.has(key)) return
+  warned.add(key)
+  console.warn(message)
+}
+
 // ---------------------------------------------------------------------------
 // Monthly series for the trend panel
 // ---------------------------------------------------------------------------
@@ -90,9 +107,96 @@ function sumNational(rows: GenomicsRow[], metricId: string, periods: Set<number>
   return total
 }
 
+// ---------------------------------------------------------------------------
+// Gene-level activity (gen_11)
+// ---------------------------------------------------------------------------
+// One row per (cancer type, gene, year): numerator = tests including that gene,
+// denominator = total tests for that cancer type in the year.
+//
+// ⚠ TWO LIMITS, both inherent to the extract — surface them in the UI, don't
+// paper over them:
+//   1. glh and icb are null on every row, so there is NO regional breakdown.
+//      Gene activity cannot be filtered by the selected GLH.
+//   2. It is yearly and spans 2016–2021, not the 2025/26 window the monthly
+//      activity metrics cover. The final year is partial (2 of 13 cancer
+//      types), so defaultYear is the latest year with full coverage.
+const GENE_METRIC_ID = 'gen_11'
+
+/** Calendar year of an epoch-ms timestamp, read in UTC. */
+function yearOf(ms: number): number {
+  return new Date(ms).getUTCFullYear()
+}
+
+function buildGeneActivity(rows: GenomicsRow[]): GeneActivity {
+  // year -> `${gene}|${cancerType}` -> row
+  const byYear = new Map<number, Map<string, GeneRow>>()
+  // `${year}|${cancerType}` -> cancer-type total for the year
+  const denominators = new Map<string, number>()
+  const allCancerTypes = new Set<string>()
+
+  for (const r of rows) {
+    if (r.metric_id !== GENE_METRIC_ID) continue
+    // gen_11 is the only metric carrying `gene`; a row without both gene and
+    // cancer type can't be placed in the table, so skip rather than guess.
+    if (!r.gene || !r.sub_category) continue
+    if (r.glh != null) {
+      warnOnce(
+        'gene-has-glh',
+        `[transform] ${GENE_METRIC_ID} unexpectedly carries a glh ("${r.glh}"). Gene activity ` +
+          'is treated as England-level — revisit buildGeneActivity() if the view now has regions.',
+      )
+    }
+
+    const year = yearOf(r.time_period)
+    allCancerTypes.add(r.sub_category)
+    if (r.denominator != null && r.denominator > 0) {
+      denominators.set(`${year}|${r.sub_category}`, r.denominator)
+    }
+
+    let cells = byYear.get(year)
+    if (!cells) {
+      cells = new Map<string, GeneRow>()
+      byYear.set(year, cells)
+    }
+    const key = `${r.gene}|${r.sub_category}`
+    const existing = cells.get(key)
+    if (existing) {
+      // Same gene/type/year appearing twice — numerators are additive.
+      existing.tests += num(r.numerator)
+    } else {
+      cells.set(key, {
+        gene: r.gene,
+        cancerType: r.sub_category,
+        tests: num(r.numerator),
+        cancerTypeTests: null,
+      })
+    }
+  }
+
+  const fullCoverage = allCancerTypes.size
+  const years: GeneYear[] = [...byYear.entries()]
+    .map(([year, cells]) => {
+      const rowsForYear = [...cells.values()].map((row) => ({
+        ...row,
+        cancerTypeTests: denominators.get(`${year}|${row.cancerType}`) ?? null,
+      }))
+      const cancerTypes = [...new Set(rowsForYear.map((r) => r.cancerType))].sort()
+      return { year, partial: cancerTypes.length < fullCoverage, cancerTypes, rows: rowsForYear }
+    })
+    .sort((a, b) => b.year - a.year)
+
+  // Default to the latest COMPLETE year — the latest year overall is partial in
+  // the current feed, and opening on it would understate every gene.
+  const defaultYear = years.find((y) => !y.partial)?.year ?? years[0]?.year ?? null
+
+  return { years, defaultYear, cancerTypes: [...allCancerTypes].sort() }
+}
+
 export interface GenomicsData {
   hubs: Hub[]
   national: NationalSummary
+  /** England-level gene testing volumes — see the note above buildGeneActivity. */
+  genes: GeneActivity
 }
 
 export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
@@ -218,5 +322,5 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
     }
   })
 
-  return { hubs, national }
+  return { hubs, national, genes: buildGeneActivity(rows) }
 }
