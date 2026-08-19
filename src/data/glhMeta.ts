@@ -15,13 +15,13 @@ export interface GlhMeta {
 }
 
 export const GLH_META: GlhMeta[] = [
-  { id: 'north-west',    name: 'North West',              hubName: 'North West Genomic Laboratory Hub',              provider: 'Manchester University NHS FT',        accreditations: ['UKAS ISO 15189', 'WGS-ready'] },
-  { id: 'ney',           name: 'North East & Yorkshire',  hubName: 'North East & Yorkshire Genomic Laboratory Hub',  provider: 'Newcastle upon Tyne Hospitals NHS FT', accreditations: ['UKAS ISO 15189', 'WGS-ready'] },
-  { id: 'east',          name: 'East',                    hubName: 'East Genomic Laboratory Hub',                    provider: 'Cambridge University Hospitals NHS FT', accreditations: ['UKAS ISO 15189', 'WGS-ready'] },
-  { id: 'north-thames',  name: 'North Thames',            hubName: 'North Thames Genomic Laboratory Hub',            provider: 'Great Ormond Street Hospital NHS FT',  accreditations: ['UKAS ISO 15189', 'WGS-ready'] },
-  { id: 'south-east',    name: 'South East',              hubName: 'South East Genomic Laboratory Hub',              provider: "Guy's and St Thomas' NHS FT",          accreditations: ['UKAS ISO 15189', 'WGS-ready'] },
-  { id: 'central-south', name: 'Central & South',         hubName: 'Central & South Genomic Laboratory Hub',         provider: 'Oxford University Hospitals NHS FT',    accreditations: ['UKAS ISO 15189', 'WGS-ready'] },
-  { id: 'south-west',    name: 'South West',              hubName: 'South West Genomic Laboratory Hub',              provider: 'North Bristol NHS Trust',              accreditations: ['UKAS ISO 15189', 'WGS-ready'] },
+  { id: 'north-west',    name: 'North West',              hubName: 'North West Genomic Laboratory Hub',              provider: 'Manchester University NHS FT' },
+  { id: 'ney',           name: 'North East & Yorkshire',  hubName: 'North East & Yorkshire Genomic Laboratory Hub',  provider: 'Newcastle upon Tyne Hospitals NHS FT' },
+  { id: 'east',          name: 'East',                    hubName: 'East Genomic Laboratory Hub',                    provider: 'Cambridge University Hospitals NHS FT' },
+  { id: 'north-thames',  name: 'North Thames',            hubName: 'North Thames Genomic Laboratory Hub',            provider: 'Great Ormond Street Hospital NHS FT' },
+  { id: 'south-east',    name: 'South East',              hubName: 'South East Genomic Laboratory Hub',              provider: "Guy's and St Thomas' NHS FT" },
+  { id: 'central-south', name: 'Central & South',         hubName: 'Central & South Genomic Laboratory Hub',         provider: 'Oxford University Hospitals NHS FT' },
+  { id: 'south-west',    name: 'South West',              hubName: 'South West Genomic Laboratory Hub',              provider: 'North Bristol NHS Trust' },
 ]
 
 export const glhById: Record<string, GlhMeta> = Object.fromEntries(
