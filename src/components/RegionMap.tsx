@@ -81,7 +81,6 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
     viewBoxRef.current = viewBox
   }, [viewBox])
 
-  const dragRef = useRef<{ startX: number; startY: number; startView: ViewBox } | null>(null)
   const wasDraggedRef = useRef(false)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -117,32 +116,39 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
     setViewBox(HOME_VIEW)
   }
 
+  // Deliberately not using setPointerCapture here: capturing the pointer on
+  // the <svg> retargets the browser's compatibility mousedown/mouseup/click
+  // events to the <svg> too, so a plain click on a child ICB <path> would
+  // never reach its own onClick. Tracking the drag via window listeners
+  // (only while a drag is in progress) leaves normal clicks on the paths
+  // completely untouched.
   function handlePointerDown(e: React.PointerEvent<SVGSVGElement>) {
     if (e.button !== 0) return
     wasDraggedRef.current = false
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startView: viewBoxRef.current }
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
+    const svg = e.currentTarget
+    const startX = e.clientX
+    const startY = e.clientY
+    const startView = viewBoxRef.current
 
-  function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
-    const drag = dragRef.current
-    if (!drag) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const dxClient = e.clientX - drag.startX
-    const dyClient = e.clientY - drag.startY
-    if (Math.abs(dxClient) > DRAG_THRESHOLD_PX || Math.abs(dyClient) > DRAG_THRESHOLD_PX) {
-      wasDraggedRef.current = true
-      setIsDragging(true)
+    const handleMove = (ev: PointerEvent) => {
+      const rect = svg.getBoundingClientRect()
+      const dxClient = ev.clientX - startX
+      const dyClient = ev.clientY - startY
+      if (Math.abs(dxClient) > DRAG_THRESHOLD_PX || Math.abs(dyClient) > DRAG_THRESHOLD_PX) {
+        wasDraggedRef.current = true
+        setIsDragging(true)
+      }
+      const dx = (dxClient / rect.width) * startView.w
+      const dy = (dyClient / rect.height) * startView.h
+      setViewBox(clampViewBox({ ...startView, x: startView.x - dx, y: startView.y - dy }))
     }
-    const dx = (dxClient / rect.width) * drag.startView.w
-    const dy = (dyClient / rect.height) * drag.startView.h
-    setViewBox(clampViewBox({ ...drag.startView, x: drag.startView.x - dx, y: drag.startView.y - dy }))
-  }
-
-  function handlePointerUp(e: React.PointerEvent<SVGSVGElement>) {
-    dragRef.current = null
-    setIsDragging(false)
-    e.currentTarget.releasePointerCapture(e.pointerId)
+    const handleUp = () => {
+      setIsDragging(false)
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+    }
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
   }
 
   const values = hubs.map((h) => metricValue(h, metric))
@@ -173,9 +179,6 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
         role="group"
         aria-label="Map of England's 36 Integrated Care Boards, grouped into the 7 Genomic Laboratory Hubs. Scroll or use the zoom controls to zoom in."
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
       >
         {/* ICB polygons — the interactive layer */}
         {icbPaths.map(({ props, d }) => {
