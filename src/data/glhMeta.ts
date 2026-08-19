@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
 // Static reference data for the 7 Genomic Laboratory Hubs.
 //
-// The API returns activity numbers only. Provider trust and accreditations are
-// stable, public facts that don't live in vw_genomics_metrics, so they are kept
-// here as reference data and merged onto the fetched activity in transform.ts.
+// The API returns activity numbers only. Provider trust is a stable, public
+// fact that doesn't live in vw_genomics_metrics, so it is kept here as
+// reference data and merged onto the fetched activity in transform.ts.
 // (name / hubName are also used to label the map and panels.)
 // ---------------------------------------------------------------------------
 
@@ -12,7 +12,6 @@ export interface GlhMeta {
   name: string
   hubName: string
   provider: string
-  accreditations: string[]
 }
 
 export const GLH_META: GlhMeta[] = [

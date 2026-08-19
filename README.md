@@ -49,7 +49,7 @@ cleanest path:
   `makeTrend`); drop that helper once the feed supplies monthly points.
 
 Fields to source per hub: total tests, tests per 100k, median TAT, % within TAT
-standard, YoY growth, catchment population, lead provider, accreditations.
+standard, YoY growth, catchment population, lead provider.
 
 ### 2. The map — done
 `RegionMap.tsx` renders the official **ONS ICB (April 2026) boundaries** (36

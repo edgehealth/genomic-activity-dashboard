@@ -26,11 +26,6 @@ export default function DetailPanel({ hub, national, metric, icb }: Props) {
         <div className="detail__prov">
           {hub.provider} · catchment {hub.catchmentM}m
         </div>
-        <div className="detail__badges">
-          {hub.accreditations.map((a) => (
-            <span className="badge" key={a}>{a}</span>
-          ))}
-        </div>
       </div>
 
       <div className="detail__stats">
