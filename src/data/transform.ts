@@ -209,7 +209,6 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
       name: meta.name,
       hubName: meta.hubName,
       provider: meta.provider,
-      accreditations: meta.accreditations,
       catchmentM: Number((pop / 1_000_000).toFixed(1)),
       totalActivity: total,
       cancerActivity: cancerByGlh.get(meta.id) ?? 0,

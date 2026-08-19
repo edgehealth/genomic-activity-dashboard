@@ -62,7 +62,7 @@ today — switch to per-ICB shading in `RegionMap.tsx` if ICB-level data arrives
 
 ### Fields to source per hub
 total tests · tests per 100k · median TAT · % within TAT standard · YoY growth ·
-catchment population · lead provider · accreditations · 12-month trend.
+catchment population · lead provider · 12-month trend.
 
 ### TODO — outstanding data wiring
 - **Wire up the `sub_category` breakdowns.** The API returns `sub_category` on every row

@@ -59,7 +59,6 @@ export interface Hub {
   provider: string
   /** Catchment population in millions (from the GLH population denominator). */
   catchmentM: number
-  accreditations: string[]
 
   /** Total activity over the latest 12 months (cancer + rare). */
   totalActivity: number
