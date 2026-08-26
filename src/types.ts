@@ -134,6 +134,14 @@ export interface Hub {
   trends: Record<MetricKey, Record<Basis, TrendPoint[]>>
 
   /**
+   * 12-month trend per sub-category, keyed by the slice's `key` (unique across
+   * both breakdowns). Sourced from the monthly per-GLH breakdown metrics, so a
+   * drilled-in view plots the sub-category itself rather than its parent metric.
+   * A key is absent when this hub reports no monthly rows for it.
+   */
+  subTrends: Record<string, Record<Basis, TrendPoint[]>>
+
+  /**
    * Sub-category breakdowns, each sorted descending with its derived remainder
    * pinned last and summing to the matching headline figure. A list is empty
    * when this hub reports no itemised rows for it at all — Central & South

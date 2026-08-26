@@ -48,6 +48,13 @@ const num = (v: number | null | undefined): number => (typeof v === 'number' ? v
 const round1 = (v: number): number => Number(v.toFixed(1))
 const round2 = (v: number): number => Number(v.toFixed(2))
 
+/**
+ * Rates span orders of magnitude: a whole metric is ~13 per 1,000, while a small
+ * sub-category can be ~0.002. Fixed-decimal rounding flattens the small ones to
+ * zero and destroys the series, so keep 4 significant figures instead.
+ */
+const roundRate = (v: number): number => (v === 0 ? 0 : Number(v.toPrecision(4)))
+
 /** Distinct time_period values for a metric, sorted descending (latest first). */
 function periodsDesc(rows: GenomicsRow[], metricId: string): number[] {
   const set = new Set<number>()
@@ -166,6 +173,44 @@ function collapseToNational(byGlh: Map<string, Map<string, number>>): Map<string
   return out
 }
 
+// --- Monthly sub-category series (for the trend panel) ---------------------
+
+/** `${glhId}|${sub}|${period}` -> count, from a monthly per-GLH breakdown. */
+function subMonthlyPerGlh(rows: GenomicsRow[], metricId: string): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const r of rows) {
+    if (r.metric_id !== metricId || !r.sub_category) continue
+    const id = resolveGlhId(r.glh)
+    if (!id) continue
+    const key = `${id}|${r.sub_category}|${r.time_period}`
+    out.set(key, (out.get(key) ?? 0) + num(r.numerator))
+  }
+  return out
+}
+
+/** `${sub}|${period}` -> count, from a monthly national breakdown metric. */
+function subMonthlyNational(rows: GenomicsRow[], metricId: string): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const r of rows) {
+    if (r.metric_id !== metricId || !r.sub_category) continue
+    const key = `${r.sub_category}|${r.time_period}`
+    out.set(key, (out.get(key) ?? 0) + num(r.numerator))
+  }
+  return out
+}
+
+/** Roll a per-GLH monthly sub map up to national totals, for breakdowns with
+ *  no national metric of their own (rare disease has none). */
+function subMonthlyToNational(perGlh: Map<string, number>): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const [k, v] of perGlh) {
+    const [, sub, period] = k.split('|')
+    const key = `${sub}|${period}`
+    out.set(key, (out.get(key) ?? 0) + v)
+  }
+  return out
+}
+
 /**
  * Pick the per-GLH periods to read for a breakdown.
  *
@@ -216,7 +261,7 @@ function buildBreakdown(
   context: string,
 ): SubCategorySlice[] {
   const share = (v: number) => (total > 0 ? v / total : 0)
-  const rate = (v: number) => (pop > 0 ? round2((v / pop) * 1000) : 0)
+  const rate = (v: number) => (pop > 0 ? roundRate((v / pop) * 1000) : 0)
 
   const itemised: SubCategorySlice[] = [...(perSub?.entries() ?? [])]
     .filter(([, value]) => value > 0)
@@ -317,6 +362,21 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
   const cancerBySubNat = sumNationalBySub(rows, 'gen_09', last12)
   const rareBySubNat = collapseToNational(rareBySubGlh)
 
+  // --- Monthly sub-category series for the trend panel ----------------------
+  // Only meaningful when the breakdown source is monthly; a yearly source
+  // yields periods that match no trend month, so the series comes back empty
+  // and the panel falls back to the parent metric's line.
+  const subMonthly: Record<BreakdownKey, { hub: Map<string, number>; national: Map<string, number> }> = {
+    cancer: (() => {
+      const hub = subMonthlyPerGlh(rows, cancerSrc.metricId)
+      return { hub, national: subMonthlyNational(rows, 'gen_09') }
+    })(),
+    rare: (() => {
+      const hub = subMonthlyPerGlh(rows, rareSrc.metricId)
+      return { hub, national: subMonthlyToNational(hub) }
+    })(),
+  }
+
   const national: NationalSummary = {
     totalActivity: natTotal,
     cancerActivity: natCancer,
@@ -358,13 +418,86 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
         }
         return {
           month: monthLabel(period),
-          hub: pop > 0 && hubCount != null ? round2((hubCount / pop) * 1000) : null,
-          national: natPop > 0 && natCount != null ? round2((natCount / natPop) * 1000) : null,
+          hub: pop > 0 && hubCount != null ? roundRate((hubCount / pop) * 1000) : null,
+          national: natPop > 0 && natCount != null ? roundRate((natCount / natPop) * 1000) : null,
         }
       })
 
     const forMetric = (key: MetricKey) => ({ count: series(key, 'count'), per1k: series(key, 'per1k') })
     return { total: forMetric('total'), cancer: forMetric('cancer'), rare: forMetric('rare') }
+  }
+
+  /**
+   * One 12-month series per sub-category this hub reports, both bases.
+   *
+   * The derived remainder gets a series too, computed per month as the metric
+   * total minus that month's itemised rows — so selecting "Other: Cancer" plots
+   * a real line rather than nothing. England is shown as the per-hub mean on
+   * counts (matching the metric-level series) and population-weighted on rates.
+   */
+  function buildSubTrends(
+    glhId: string,
+    slices: Record<BreakdownKey, SubCategorySlice[]>,
+  ): Record<string, Record<Basis, TrendPoint[]>> {
+    const pop = popByGlh.get(glhId) ?? 0
+    const out: Record<string, Record<Basis, TrendPoint[]>> = {}
+
+    for (const breakdown of ['cancer', 'rare'] as BreakdownKey[]) {
+      const metricKey: MetricKey = breakdown
+      const src = subMonthly[breakdown]
+      const itemised = slices[breakdown].filter((s) => !s.isRemainder)
+      if (itemised.length === 0) continue
+
+      /** Monthly value for one sub-category, hub and national. */
+      const at = (sub: string, period: number) => ({
+        hub: src.hub.get(`${glhId}|${sub}|${period}`),
+        national: src.national.get(`${sub}|${period}`),
+      })
+
+      for (const slice of slices[breakdown]) {
+        // Remainder: metric total for the month, less every itemised row.
+        const monthly = trendMonths.map((period) => {
+          if (!slice.isRemainder) return { period, ...at(slice.key, period) }
+          const hubTotal = monthly_(metricKey).hub.get(`${glhId}|${period}`)
+          const natTotal = monthly_(metricKey).national.get(period)
+          let hubItem = 0
+          let natItem = 0
+          for (const s of itemised) {
+            const v = at(s.key, period)
+            hubItem += v.hub ?? 0
+            natItem += v.national ?? 0
+          }
+          return {
+            period,
+            hub: hubTotal == null ? undefined : Math.max(0, hubTotal - hubItem),
+            national: natTotal == null ? undefined : Math.max(0, natTotal - natItem),
+          }
+        })
+
+        // A sub-category with no monthly rows at all (yearly source, or simply
+        // unreported here) is left out, so the panel falls back to the metric.
+        if (monthly.every((m) => m.hub == null && m.national == null)) continue
+
+        out[slice.key] = {
+          count: monthly.map((m) => ({
+            month: monthLabel(m.period),
+            hub: m.hub ?? null,
+            national: m.national != null ? Math.round(m.national / GLH_META.length) : null,
+          })),
+          per1k: monthly.map((m) => ({
+            month: monthLabel(m.period),
+            hub: pop > 0 && m.hub != null ? roundRate((m.hub / pop) * 1000) : null,
+            national: natPop > 0 && m.national != null ? roundRate((m.national / natPop) * 1000) : null,
+          })),
+        }
+      }
+    }
+    return out
+  }
+
+  /** monthly[] accessor, kept as a function so buildSubTrends reads clearly. */
+  function monthly_(key: MetricKey): MonthlySeries {
+    return monthly[key]
   }
 
   // --- Assemble the 7 hubs (always all of them; missing data → 0) ---
@@ -375,6 +508,10 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
     const cancer = cancerByGlh.get(meta.id) ?? 0
     const rare = rareByGlh.get(meta.id) ?? 0
     const per1k = pop > 0 ? (total / pop) * 1000 : 0
+    const subCategories = {
+      cancer: buildBreakdown('cancer', cancerBySubGlh.get(meta.id), cancer, pop, meta.name),
+      rare: buildBreakdown('rare', rareBySubGlh.get(meta.id), rare, pop, meta.name),
+    }
 
     return {
       id: meta.id,
@@ -390,10 +527,8 @@ export function buildGenomicsData(rows: GenomicsRow[]): GenomicsData {
       yoyGrowth: hasYoY && prev > 0 ? round1(((total - prev) / prev) * 100) : 0,
       perVsNat: national.per1k > 0 ? round1(((per1k - national.per1k) / national.per1k) * 100) : 0,
       trends: buildTrends(meta.id),
-      subCategories: {
-        cancer: buildBreakdown('cancer', cancerBySubGlh.get(meta.id), cancer, pop, meta.name),
-        rare: buildBreakdown('rare', rareBySubGlh.get(meta.id), rare, pop, meta.name),
-      },
+      subCategories,
+      subTrends: buildSubTrends(meta.id, subCategories),
     }
   })
 

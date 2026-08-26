@@ -236,6 +236,21 @@
 .stat__value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-top: 3px; }
 .stat__unit { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 2px; }
 .stat__foot { font-size: 11px; font-weight: 600; margin-top: 3px; }
+.stat__foot--muted { color: var(--muted); font-weight: 500; }
+
+/* The drilled-in sub-category: spans the 2-col grid and is tinted, so the
+   current selection reads as the headline figure rather than a fifth peer. */
+.stat--sub {
+  grid-column: 1 / -1;
+  background: var(--teal-050);
+  border: 1px solid var(--teal-100);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-top: 2px;
+}
+.stat--sub .stat__label { color: var(--teal-900); font-weight: 600; }
+.stat--sub .stat__value { font-size: 20px; }
+.stat__value--none { color: var(--muted); }
 
 .detail__section { padding-top: 16px; }
 .detail__sectitle { font-size: 13px; font-weight: 700; }

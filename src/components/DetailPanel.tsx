@@ -1,5 +1,5 @@
 import type { Hub, IcbInfo, NationalSummary, MetricView } from '../types'
-import { TREND_COVERAGE, trendLabels } from '../data/metrics'
+import { METRICS, TREND_COVERAGE, trendLabels } from '../data/metrics'
 import PerformanceBars from './PerformanceBars'
 import TrendChart from './TrendChart'
 
@@ -15,7 +15,19 @@ interface Props {
 const fmt = (v: number) => Math.round(v).toLocaleString('en-GB')
 
 export default function DetailPanel({ hub, national, view, icb }: Props) {
-  const trend = trendLabels(view)
+  // A drilled-in sub-category plots its own series when the feed carries one;
+  // otherwise the parent metric's line, and the subtitle says so.
+  const subSeries = view.subCategory ? hub.subTrends[view.subCategory] : undefined
+  const series = subSeries?.[view.basis] ?? hub.trends[view.metric][view.basis]
+
+  const breakdown = METRICS[view.metric].breakdown
+  const slice =
+    breakdown && view.subCategory
+      ? hub.subCategories[breakdown].find((s) => s.key === view.subCategory)
+      : undefined
+
+  // Name the line after the sub-category only when it really is the one plotted.
+  const trend = trendLabels(view, subSeries && slice ? `${slice.label} activity` : undefined)
   return (
     <aside className="detail">
       <div className="detail__head">
@@ -53,6 +65,31 @@ export default function DetailPanel({ hub, national, view, icb }: Props) {
           <div className="stat__label">Rare disease (12m)</div>
           <div className="stat__value tnum">{fmt(hub.rareActivity)}</div>
         </div>
+
+        {/* The drilled-in sub-category, spanning the grid so its count reads as
+            the headline figure for the current selection. */}
+        {view.subCategory && (
+          <div className="stat stat--sub">
+            <div className="stat__label">
+              {slice ? slice.label : 'Selected type'} (12m)
+            </div>
+            {slice ? (
+              <>
+                <div className="stat__value tnum">
+                  {fmt(slice.value)}
+                  <span className="stat__unit">
+                    · {slice.per1k.toFixed(1)} per 1,000
+                  </span>
+                </div>
+                <div className="stat__foot stat__foot--muted">
+                  {(slice.share * 100).toFixed(1)}% of {METRICS[view.metric].noun}
+                </div>
+              </>
+            ) : (
+              <div className="stat__value stat__value--none">—</div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="detail__section">
@@ -65,9 +102,9 @@ export default function DetailPanel({ hub, national, view, icb }: Props) {
         <h4 className="detail__sectitle">{trend.title}</h4>
         <p className="detail__secsub">
           {trend.subtitle}
-          {view.subCategory !== null && ` ${TREND_COVERAGE[view.metric]}`}
+          {view.subCategory !== null && !subSeries && ` ${TREND_COVERAGE[view.metric]}`}
         </p>
-        <TrendChart data={hub.trends[view.metric][view.basis]} view={view} />
+        <TrendChart data={series} view={view} />
       </div>
     </aside>
   )
