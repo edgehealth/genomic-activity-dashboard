@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import './App.css'
-import type { MetricKey } from './types'
+import type { Basis, MetricKey, MetricView } from './types'
 import { icbByCode } from './data/icbToGlh'
 import { useGenomics } from './hooks/useGenomics'
 import Header from './components/Header'
@@ -10,9 +10,19 @@ import DetailPanel from './components/DetailPanel'
 
 export default function App() {
   const { data, loading, error } = useGenomics()
-  const [metric, setMetric] = useState<MetricKey>('per1k')
+  const [metric, setMetric] = useState<MetricKey>('total')
+  const [subCategory, setSubCategory] = useState<string | null>(null)
+  const [basis, setBasis] = useState<Basis>('count')
   const [selectedId, setSelectedId] = useState<string>('ney')
   const [selectedIcb, setSelectedIcb] = useState<string | null>(null)
+
+  const view: MetricView = { metric, subCategory, basis }
+
+  /** Sub-category keys belong to one metric's breakdown, so switching clears it. */
+  const handleSelectMetric = (m: MetricKey) => {
+    setMetric(m)
+    setSubCategory(null)
+  }
 
   /** Map click: select the ICB and jump the dashboard to its parent GLH. */
   const handleSelectIcb = (icbCode: string, glhId: string) => {
@@ -52,10 +62,13 @@ export default function App() {
               <KpiRow national={data.national} />
               <MapPanel
                 hubs={data.hubs}
-                metric={metric}
+                view={view}
+                national={data.national}
                 selectedId={selectedId}
                 selectedIcb={selectedIcb}
-                onSelectMetric={setMetric}
+                onSelectMetric={handleSelectMetric}
+                onSelectSubCategory={setSubCategory}
+                onSelectBasis={setBasis}
                 onSelectHub={handleSelectHub}
                 onSelectIcb={handleSelectIcb}
               />
@@ -67,7 +80,7 @@ export default function App() {
           <DetailPanel
             hub={data.hubs.find((h) => h.id === selectedId) ?? data.hubs[0]}
             national={data.national}
-            metric={metric}
+            view={view}
             icb={selectedIcb ? icbByCode[selectedIcb] : undefined}
           />
         )}

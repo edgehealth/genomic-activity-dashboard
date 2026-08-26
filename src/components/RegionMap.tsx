@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Hub, MetricKey } from '../types'
-import { METRICS, metricValue } from '../data/metrics'
+import type { Hub, MetricView } from '../types'
+import { resolveMeasure } from '../data/metrics'
 import { icbByCode } from '../data/icbToGlh'
 import { MAP_WIDTH, MAP_HEIGHT, useMap } from '../hooks/useMap'
 
@@ -64,13 +64,14 @@ function zoomViewBox(vb: ViewBox, factor: number, focusX: number, focusY: number
 
 interface Props {
   hubs: Hub[]
-  metric: MetricKey
+  view: MetricView
   selectedId: string
   selectedIcb: string | null
   onSelectIcb: (icbCode: string, glhId: string) => void
 }
 
-export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSelectIcb }: Props) {
+export default function RegionMap({ hubs, view, selectedId, selectedIcb, onSelectIcb }: Props) {
+  const measure = resolveMeasure(view)
   const { icbPaths, glhPaths } = useMap()
   const [hoveredIcb, setHoveredIcb] = useState<string | null>(null)
 
@@ -151,16 +152,21 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
     window.addEventListener('pointerup', handleUp)
   }
 
-  const values = hubs.map((h) => metricValue(h, metric))
-  const min = Math.min(...values)
-  const max = Math.max(...values)
+  // Non-reporting hubs are excluded from the colour domain — including them as 0
+  // would stretch the ramp and paint them as the lowest value rather than absent.
+  const values = hubs.map((h) => measure.value(h)).filter((v): v is number => v !== null)
+  const min = values.length ? Math.min(...values) : 0
+  const max = values.length ? Math.max(...values) : 0
   const norm = (v: number) => (max === min ? 0.5 : (v - min) / (max - min))
   const hubById = new Map(hubs.map((h) => [h.id, h]))
 
-  const fillFor = (glhId: string) => {
+  /** Fill for a GLH, or null when it has no value (caller draws the hatch). */
+  const fillFor = (glhId: string): string | null => {
     const hub = hubById.get(glhId)
-    if (!hub) return scaleColor(0)
-    return scaleColor(0.12 + norm(metricValue(hub, metric)) * 0.88)
+    if (!hub) return null
+    const v = measure.value(hub)
+    if (v === null) return null
+    return scaleColor(0.12 + norm(v) * 0.88)
   }
 
   const hovered = hoveredIcb ? icbByCode[hoveredIcb] : null
@@ -180,16 +186,26 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
         aria-label="Map of England's 36 Integrated Care Boards, grouped into the 7 Genomic Laboratory Hubs. Scroll or use the zoom controls to zoom in."
         onPointerDown={handlePointerDown}
       >
+        {/* Hatch for hubs that report nothing on the active measure — texture,
+            not a colour, so "absent" can't be mistaken for "low". */}
+        <defs>
+          <pattern id="map-nodata" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="6" height="6" fill="var(--surface-alt)" />
+            <line x1="0" y1="0" x2="0" y2="6" stroke="var(--border-strong)" strokeWidth="2" />
+          </pattern>
+        </defs>
+
         {/* ICB polygons — the interactive layer */}
         {icbPaths.map(({ props, d }) => {
           const hub = hubById.get(props.glhId)
           const dimmed = hoveredIcb !== null && hoveredIcb !== props.icbCode
+          const fill = fillFor(props.glhId)
           return (
             <path
               key={props.icbCode}
               className={`map__icb${dimmed ? ' map__icb--dim' : ''}`}
               d={d}
-              fill={fillFor(props.glhId)}
+              fill={fill ?? 'url(#map-nodata)'}
               tabIndex={0}
               role="button"
               aria-label={`${props.icbName}, ${hub?.name ?? 'unknown'} hub`}
@@ -267,9 +283,13 @@ export default function RegionMap({ hubs, metric, selectedId, selectedIcb, onSel
         <div className="map__tooltip">
           <strong>{hovered.icbName}</strong>
           <span>
-            {hoveredHub
-              ? `${hoveredHub.name} GLH · ${METRICS[metric].format(metricValue(hoveredHub, metric))}`
-              : 'No hub data'}
+            {(() => {
+              if (!hoveredHub) return 'No hub data'
+              const v = measure.value(hoveredHub)
+              return v === null
+                ? `${hoveredHub.name} GLH · not reported`
+                : `${hoveredHub.name} GLH · ${measure.format(v)}`
+            })()}
           </span>
         </div>
       )}

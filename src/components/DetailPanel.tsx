@@ -1,21 +1,21 @@
-import type { Hub, IcbInfo, MetricKey, NationalSummary } from '../types'
-import { METRICS } from '../data/metrics'
+import type { Hub, IcbInfo, NationalSummary, MetricView } from '../types'
+import { TREND_COVERAGE, trendLabels } from '../data/metrics'
 import PerformanceBars from './PerformanceBars'
 import TrendChart from './TrendChart'
 
 interface Props {
   hub: Hub
   national: NationalSummary
-  /** The metric selected on the map toggle the trend panel follows it. */
-  metric: MetricKey
+  /** What the map toggle is showing — the trend panel follows it. */
+  view: MetricView
   /** Set when the hub was reached by clicking an ICB on the map. */
   icb?: IcbInfo
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString('en-GB')
 
-export default function DetailPanel({ hub, national, metric, icb }: Props) {
-  const trend = METRICS[metric].trend
+export default function DetailPanel({ hub, national, view, icb }: Props) {
+  const trend = trendLabels(view)
   return (
     <aside className="detail">
       <div className="detail__head">
@@ -58,13 +58,16 @@ export default function DetailPanel({ hub, national, metric, icb }: Props) {
       <div className="detail__section">
         <h4 className="detail__sectitle">Performance vs national average</h4>
         <p className="detail__secsub">Dashed line marks the England mean across the 7 hubs.</p>
-        <PerformanceBars hub={hub} national={national} />
+        <PerformanceBars hub={hub} national={national} view={view} />
       </div>
 
       <div className="detail__section">
         <h4 className="detail__sectitle">{trend.title}</h4>
-        <p className="detail__secsub">{trend.subtitle}</p>
-        <TrendChart data={hub.trends[metric]} metric={metric} />
+        <p className="detail__secsub">
+          {trend.subtitle}
+          {view.subCategory !== null && ` ${TREND_COVERAGE[view.metric]}`}
+        </p>
+        <TrendChart data={hub.trends[view.metric][view.basis]} view={view} />
       </div>
     </aside>
   )
