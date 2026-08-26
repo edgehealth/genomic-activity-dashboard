@@ -1,5 +1,5 @@
 import type { Hub, MetricView } from '../types'
-import { resolveMeasure } from '../data/metrics'
+import { rateDecimals, resolveMeasure } from '../data/metrics'
 
 interface Props {
   hubs: Hub[]
@@ -21,6 +21,14 @@ export default function RankedList({ hubs, view, selectedId, onSelect }: Props) 
     if (bv === null) return -1
     return measure.lowerIsBetter ? av - bv : bv - av
   })
+
+  // One decimal count for the whole column, sized to its largest value, so the
+  // list doesn't mix "0.2" with "0.002" down the same edge.
+  const values = hubs.map((h) => measure.value(h)).filter((v): v is number => v !== null)
+  const format =
+    view.basis === 'per1k' && values.length
+      ? ((dp) => (v: number) => v.toFixed(dp))(rateDecimals(Math.max(...values.map(Math.abs))))
+      : measure.format
 
   let rank = 0
 
@@ -54,7 +62,7 @@ export default function RankedList({ hubs, view, selectedId, onSelect }: Props) 
                   <span className="ranked__prov">{h.provider}</span>
                 </span>
                 <span className="ranked__val tnum">
-                  {value === null ? '—' : measure.format(value)}
+                  {value === null ? '—' : format(value)}
                 </span>
               </button>
             </li>

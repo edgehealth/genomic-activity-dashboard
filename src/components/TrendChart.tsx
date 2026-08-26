@@ -9,7 +9,7 @@ import {
   Label,
 } from 'recharts'
 import type { MetricView, TrendPoint } from '../types'
-import { METRICS, resolveMeasure, trendLabels } from '../data/metrics'
+import { METRICS, rateDecimals, resolveMeasure, trendLabels } from '../data/metrics'
 
 interface Props {
   data: TrendPoint[]
@@ -19,10 +19,21 @@ interface Props {
 export default function TrendChart({ data, view }: Props) {
   const def = METRICS[view.metric]
   const { axisLabel, unit } = trendLabels(view)
-  // Axis/tooltip formatting follows the basis, so read it off the undrilled
-  // measure rather than the sub-category (the series is always metric-level).
-  const format = resolveMeasure({ ...view, subCategory: null }).format
   const hubHasData = data.some((p) => p.hub != null)
+
+  // Rates get decimals sized to this series' own magnitude, applied to every
+  // tick and tooltip alike — a sub-category plotted at ~0.002 per 1,000 would
+  // otherwise render as a flat row of "0.0". Counts keep the shared formatter.
+  const format = (() => {
+    const base = resolveMeasure({ ...view, subCategory: null }).format
+    if (view.basis !== 'per1k') return base
+    const maxAbs = Math.max(
+      0,
+      ...data.flatMap((p) => [p.hub, p.national].filter((v): v is number => v != null).map(Math.abs)),
+    )
+    const dp = rateDecimals(maxAbs)
+    return (v: number) => v.toFixed(dp)
+  })()
 
   return (
     <div className="trend">

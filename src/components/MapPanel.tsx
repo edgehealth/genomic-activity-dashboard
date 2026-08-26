@@ -56,7 +56,9 @@ export default function MapPanel({
         <div>
           <h3 className="panel__title">Genomic Laboratory Hubs — England</h3>
           <p className="panel__sub">
-            Shaded by {measure.longLabel.toLowerCase()}. Click an ICB to see its hub's detail.
+            {/* Not lower-cased: sub-category labels are proper nouns
+                ("Audiology", "CNS Cancer") and read wrong in lower case. */}
+            Shaded by {measure.longLabel}. Click an ICB to see its hub's detail.
           </p>
         </div>
         <div className="toggle" role="tablist" aria-label="Map metric">

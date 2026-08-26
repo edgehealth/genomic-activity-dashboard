@@ -121,9 +121,30 @@ export const TREND_COVERAGE: Record<MetricKey, string> = {
   cancer: 'Covers total cancer activity per month.',
   rare: 'Covers total rare disease activity per month.',
 }
-// Rates display to 1dp. Stored values keep 2dp so ranking and the colour scale
-// can still separate hubs that round to the same displayed figure.
-const basisFormat = (basis: Basis) => (basis === 'per1k' ? (v: number) => v.toFixed(1) : intFmt)
+/**
+ * Rates display to 1dp — but a small sub-category's rate is ~0.002 per 1,000,
+ * where 1dp renders every hub as "0.0". Below the point where 1dp carries any
+ * information, add decimals rather than lie about the value.
+ */
+export function formatRate(v: number): string {
+  return v.toFixed(rateDecimals(Math.abs(v)))
+}
+
+/**
+ * Decimals wide enough for the largest value in a series, applied uniformly —
+ * an axis with mixed decimal counts across its ticks reads as noise.
+ *
+ * At or above 1 this stays at the 1dp house style. Below it, the count scales
+ * with magnitude so the largest value keeps two significant figures: a series
+ * peaking at 0.0055 needs 4dp, and anything coarser is a flat row of zeroes.
+ */
+export function rateDecimals(maxAbs: number): number {
+  if (maxAbs === 0) return 1
+  if (maxAbs >= 1) return 1
+  return Math.min(6, Math.ceil(-Math.log10(maxAbs)) + 1)
+}
+
+const basisFormat = (basis: Basis) => (basis === 'per1k' ? formatRate : intFmt)
 
 export function resolveMeasure(view: MetricView): ActiveMeasure {
   const def = METRICS[view.metric]
@@ -200,8 +221,12 @@ export const REMAINDER_KEY = {
 // Trend labelling — derived from the view rather than stored per combination.
 // ---------------------------------------------------------------------------
 
-export function trendLabels(view: MetricView): TrendLabels {
-  const { noun } = METRICS[view.metric]
+/**
+ * `subject` overrides the metric noun when a sub-category has its own monthly
+ * series, so the panel names what is actually plotted.
+ */
+export function trendLabels(view: MetricView, subject?: string): TrendLabels {
+  const noun = subject ?? METRICS[view.metric].noun
   const perThousand = view.basis === 'per1k'
   return {
     title: `12-month ${noun} trend`,
