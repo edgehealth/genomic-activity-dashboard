@@ -8,17 +8,20 @@ import {
   CartesianGrid,
   Label,
 } from 'recharts'
-import type { MetricKey, TrendPoint } from '../types'
-import { METRICS } from '../data/metrics'
+import type { MetricView, TrendPoint } from '../types'
+import { METRICS, resolveMeasure, trendLabels } from '../data/metrics'
 
 interface Props {
   data: TrendPoint[]
-  metric: MetricKey
+  view: MetricView
 }
 
-export default function TrendChart({ data, metric }: Props) {
-  const def = METRICS[metric]
-  const { axisLabel, unit } = def.trend
+export default function TrendChart({ data, view }: Props) {
+  const def = METRICS[view.metric]
+  const { axisLabel, unit } = trendLabels(view)
+  // Axis/tooltip formatting follows the basis, so read it off the undrilled
+  // measure rather than the sub-category (the series is always metric-level).
+  const format = resolveMeasure({ ...view, subCategory: null }).format
   const hubHasData = data.some((p) => p.hub != null)
 
   return (
@@ -42,7 +45,7 @@ export default function TrendChart({ data, metric }: Props) {
             tickLine={false}
             axisLine={false}
             width={52}
-            tickFormatter={(v: number) => def.format(v)}
+            tickFormatter={(v: number) => format(v)}
           >
             <Label
               value={axisLabel}
@@ -53,7 +56,7 @@ export default function TrendChart({ data, metric }: Props) {
           </YAxis>
           <Tooltip
             formatter={(value) =>
-              typeof value === 'number' ? `${def.format(value)} ${unit}` : 'No data'
+              typeof value === 'number' ? `${format(value)} ${unit}` : 'No data'
             }
             contentStyle={{
               fontSize: 12,

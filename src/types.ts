@@ -6,28 +6,51 @@
 // ---------------------------------------------------------------------------
 
 /**
- * The metrics the map / ranking can be shaded by. All are activity measures
- * from vw_genomics_metrics (there is no turnaround-time data in the source):
+ * The three activity measures the map / ranking can show. All are counts from
+ * vw_genomics_metrics (there is no turnaround-time data in the source):
  *   total  — total genomic activity (cancer + rare disease), gen_06 / gen_03
- *   cancer — cancer activity, gen_04
- *   rare   — rare & inherited disease activity, gen_05
- *   per1k  — activity per 1,000 population, gen_07 (cancer) + gen_12 (rare)
+ *   cancer — cancer activity, gen_04 / gen_01
+ *   rare   — rare & inherited disease activity, gen_05 / gen_02
+ *
+ * Per-1,000 is deliberately NOT a metric — it is a Basis that applies to all
+ * three, so Counts and Per 1,000 are always two views of the same numerator.
  */
-export type MetricKey = 'total' | 'cancer' | 'rare' | 'per1k'
+export type MetricKey = 'total' | 'cancer' | 'rare'
+
+/** How a metric's value is expressed. Applies to every metric and sub-category. */
+export type Basis = 'count' | 'per1k'
+
+/** The metrics that carry a sub-category breakdown. Total has none. */
+export type BreakdownKey = 'cancer' | 'rare'
+
+/**
+ * What the map and ranked list are currently showing.
+ *
+ * `subCategory` drills a metric into one of its breakdown rows — a raw
+ * `sub_category` key, or a derived remainder key. It is only meaningful for
+ * metrics whose MetricDef declares a `breakdown`; Total ignores it.
+ *
+ * Sub-categories are deliberately not extra MetricKeys: their per-GLH sources
+ * (gen_08 / gen_13) are yearly, so they can shade the map and rank hubs but
+ * can't drive the monthly trend panel until the monthly branches land.
+ */
+export interface MetricView {
+  metric: MetricKey
+  subCategory: string | null
+  basis: Basis
+}
 
 export interface MetricDef {
   key: MetricKey
   /** Short label used on the toggle buttons. */
   label: string
-  /** Longer label used in headings. */
-  longLabel: string
+  /** Lower-case noun used to build headings and trend labels. */
+  noun: string
   /** true when a lower value is the "better" direction. None today, but the
    *  ranking/perf code still honours it, so it stays part of the contract. */
   lowerIsBetter: boolean
-  /** How to render a raw value for this metric. */
-  format: (v: number) => string
-  /** Labelling for the 12-month trend panel when this metric is selected. */
-  trend: TrendLabels
+  /** Which sub-category list this metric drills into, or null for none. */
+  breakdown: BreakdownKey | null
 }
 
 export interface TrendLabels {
@@ -49,6 +72,33 @@ export interface TrendPoint {
   national: number | null
 }
 
+/**
+ * One row of a metric's sub-category breakdown.
+ *
+ * Cancer types come from gen_08 (per GLH, or gen_16 when available) and gen_09
+ * (national); rare disease specialist categories from gen_13. Neither list
+ * covers its whole metric — cancer itemises ~52% of cancer activity and rare
+ * disease ~92% — so each list carries a derived remainder row that makes it sum
+ * to the headline figure. See buildBreakdown() in src/data/transform.ts.
+ */
+export interface SubCategorySlice {
+  /** Raw `sub_category` value, or a derived remainder key. */
+  key: string
+  /** Display label, with the source's boilerplate prefix/suffix stripped. */
+  label: string
+  /** Activity count over the latest 12 months. */
+  value: number
+  /** Share of the metric total this list belongs to, 0..1. */
+  share: number
+  /**
+   * `value` per 1,000 population — the like-for-like comparison across GLHs,
+   * whose catchments differ by nearly 3x. 0 when no population is known.
+   */
+  per1k: number
+  /** true for a derived remainder row, which is not a source category. */
+  isRemainder: boolean
+}
+
 export interface Hub {
   id: string
   /** Region name, e.g. "North East & Yorkshire". */
@@ -59,6 +109,9 @@ export interface Hub {
   provider: string
   /** Catchment population in millions (from the GLH population denominator). */
   catchmentM: number
+  /** Raw catchment population — the denominator behind every per-1,000 figure.
+   *  Kept unrounded (catchmentM is display-rounded and would skew the rate). */
+  population: number
 
   /** Total activity over the latest 12 months (cancer + rare). */
   totalActivity: number
@@ -66,7 +119,7 @@ export interface Hub {
   cancerActivity: number
   /** Rare & inherited disease activity over the latest 12 months. */
   rareActivity: number
-  /** Activity per 1,000 population, latest full year. */
+  /** Total activity per 1,000 population over the same 12 months. */
   per1k: number
 
   /** Year-on-year growth in total activity, %. 0 when <24 months of data. */
@@ -75,14 +128,18 @@ export interface Hub {
   perVsNat: number
 
   /**
-   * 12-month trend per metric, this hub vs England — the trend panel plots
-   * whichever series matches the metric selected on the map toggle.
-   *
-   * total/cancer/rare come straight from the monthly count metrics. per1k has
-   * no monthly source in the feed (gen_07/gen_12 are yearly), so it is derived
-   * as monthly activity ÷ catchment population — see buildTrends().
+   * 12-month trend per metric per basis, this hub vs England. The trend panel
+   * plots whichever series matches the current MetricView.
    */
-  trends: Record<MetricKey, TrendPoint[]>
+  trends: Record<MetricKey, Record<Basis, TrendPoint[]>>
+
+  /**
+   * Sub-category breakdowns, each sorted descending with its derived remainder
+   * pinned last and summing to the matching headline figure. A list is empty
+   * when this hub reports no itemised rows for it at all — Central & South
+   * currently reports no cancer types (see transform.ts).
+   */
+  subCategories: Record<BreakdownKey, SubCategorySlice[]>
 }
 
 /**
@@ -102,6 +159,11 @@ export interface NationalSummary {
   cancerActivity: number
   rareActivity: number
   hubCount: number
+  /** Summed GLH population — the denominator behind England's per-1,000 rates. */
+  population: number
+  /** Total activity per 1,000 England population. */
   per1k: number
   yoyGrowth: number
+  /** England breakdowns, same shape as Hub.subCategories — drives the dropdown. */
+  subCategories: Record<BreakdownKey, SubCategorySlice[]>
 }

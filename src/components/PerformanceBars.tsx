@@ -1,4 +1,5 @@
-import type { Hub, NationalSummary } from '../types'
+import type { Hub, MetricView, NationalSummary } from '../types'
+import { METRICS, resolveMeasure, subCategoriesFor } from '../data/metrics'
 
 interface Row {
   label: string
@@ -36,14 +37,53 @@ function compareRow(label: string, hubVal: number, natMean: number, format: (v: 
   }
 }
 
-export default function PerformanceBars({ hub, national }: { hub: Hub; national: NationalSummary }) {
+interface Props {
+  hub: Hub
+  national: NationalSummary
+  view: MetricView
+}
+
+export default function PerformanceBars({ hub, national, view }: Props) {
   const n = national.hubCount || 7
-  const rows: Row[] = [
-    compareRow('Activity per 1,000 population', hub.per1k, national.per1k, (v) => v.toFixed(1)),
-    compareRow('Total activity (12m)', hub.totalActivity, national.totalActivity / n, fmt),
-    compareRow('Cancer activity (12m)', hub.cancerActivity, national.cancerActivity / n, fmt),
-    compareRow('Rare disease activity (12m)', hub.rareActivity, national.rareActivity / n, fmt),
-  ]
+  const perThousand = view.basis === 'per1k'
+  const rate = (count: number, pop: number) => (pop > 0 ? (count / pop) * 1000 : 0)
+
+  // Rows follow the basis: counts compare against the England per-hub mean,
+  // per-1,000 against the England population-weighted rate.
+  const rows: Row[] = perThousand
+    ? [
+        compareRow('Total activity per 1,000', hub.per1k, national.per1k, (v) => v.toFixed(1)),
+        compareRow(
+          'Cancer activity per 1,000',
+          rate(hub.cancerActivity, hub.population),
+          rate(national.cancerActivity, national.population),
+          (v) => v.toFixed(1),
+        ),
+        compareRow(
+          'Rare disease per 1,000',
+          rate(hub.rareActivity, hub.population),
+          rate(national.rareActivity, national.population),
+          (v) => v.toFixed(1),
+        ),
+      ]
+    : [
+        compareRow('Total activity (12m)', hub.totalActivity, national.totalActivity / n, fmt),
+        compareRow('Cancer activity (12m)', hub.cancerActivity, national.cancerActivity / n, fmt),
+        compareRow('Rare disease activity (12m)', hub.rareActivity, national.rareActivity / n, fmt),
+      ]
+
+  // When a sub-category is drilled into, lead with it. Omitted when this hub
+  // doesn't report it, since there is nothing to compare against.
+  const breakdown = METRICS[view.metric].breakdown
+  if (breakdown && view.subCategory) {
+    const measure = resolveMeasure(view)
+    const hubValue = measure.value(hub)
+    const natSlice = subCategoriesFor(national, view.metric).find((t) => t.key === view.subCategory)
+    if (hubValue !== null && natSlice) {
+      const natMean = perThousand ? natSlice.per1k : natSlice.value / n
+      rows.unshift(compareRow(measure.longLabel, hubValue, natMean, measure.format))
+    }
+  }
 
   return (
     <div className="perf">
