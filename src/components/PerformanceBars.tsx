@@ -52,24 +52,24 @@ export default function PerformanceBars({ hub, national, view }: Props) {
   // per-1,000 against the England population-weighted rate.
   const rows: Row[] = perThousand
     ? [
-        compareRow('Total activity per 1,000', hub.per1k, national.per1k, (v) => v.toFixed(1)),
+        compareRow('Total genomic tests per 1,000', hub.per1k, national.per1k, (v) => v.toFixed(1)),
         compareRow(
-          'Cancer activity per 1,000',
+          'Cancer genomic tests per 1,000',
           rate(hub.cancerActivity, hub.population),
           rate(national.cancerActivity, national.population),
           (v) => v.toFixed(1),
         ),
         compareRow(
-          'Rare disease per 1,000',
+          'Rare & inherited disease per 1,000',
           rate(hub.rareActivity, hub.population),
           rate(national.rareActivity, national.population),
           (v) => v.toFixed(1),
         ),
       ]
     : [
-        compareRow('Total activity (12m)', hub.totalActivity, national.totalActivity / n, fmt),
-        compareRow('Cancer activity (12m)', hub.cancerActivity, national.cancerActivity / n, fmt),
-        compareRow('Rare disease activity (12m)', hub.rareActivity, national.rareActivity / n, fmt),
+        compareRow('Total genomic tests (12m)', hub.totalActivity, national.totalActivity / n, fmt),
+        compareRow('Cancer genomic tests (12m)', hub.cancerActivity, national.cancerActivity / n, fmt),
+        compareRow('Rare & inherited disease activity (12m)', hub.rareActivity, national.rareActivity / n, fmt),
       ]
 
   // When a sub-category is drilled into, lead with it. Omitted when this hub

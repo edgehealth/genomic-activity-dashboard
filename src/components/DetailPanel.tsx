@@ -42,7 +42,7 @@ export default function DetailPanel({ hub, national, view, icb }: Props) {
 
       <div className="detail__stats">
         <div className="stat">
-          <div className="stat__label">Total activity (12m)</div>
+          <div className="stat__label">Total genomic tests (12m)</div>
           <div className="stat__value tnum">{fmt(hub.totalActivity)}</div>
           {hub.yoyGrowth !== 0 && (
             <div className={`stat__foot ${hub.yoyGrowth >= 0 ? 'delta-good' : 'delta-bad'}`}>
@@ -51,14 +51,14 @@ export default function DetailPanel({ hub, national, view, icb }: Props) {
           )}
         </div>
         <div className="stat">
-          <div className="stat__label">Activity per 1,000</div>
+          <div className="stat__label">Genomic tests per 1,000</div>
           <div className="stat__value tnum">{hub.per1k.toFixed(1)}</div>
           <div className={`stat__foot ${hub.perVsNat >= 0 ? 'delta-good' : 'delta-bad'}`}>
             {hub.perVsNat >= 0 ? '▲' : '▼'} {Math.abs(hub.perVsNat)}% vs nat
           </div>
         </div>
         <div className="stat">
-          <div className="stat__label">Cancer activity (12m)</div>
+          <div className="stat__label">Cancer tests (12m)</div>
           <div className="stat__value tnum">{fmt(hub.cancerActivity)}</div>
         </div>
         <div className="stat">

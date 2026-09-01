@@ -45,12 +45,12 @@ export default function App() {
           <div className="intro">
             <h1 className="intro__title">Regional variation in genomic testing</h1>
             <p className="intro__sub">
-              Activity across the 7 NHS Genomic Laboratory Hubs, benchmarked against the
+              Genomic testing activity across the 7 NHS Genomic Laboratory Hubs, benchmarked against the
               England average. Select a region to see its detailed breakdown.
             </p>
           </div>
 
-          {loading && <div className="state state--loading">Loading genomics activity…</div>}
+          {loading && <div className="state state--loading">Loading genomic testing activity…</div>}
           {error && (
             <div className="state state--error">
               Couldn’t load data: {error}

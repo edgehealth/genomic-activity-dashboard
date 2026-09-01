@@ -25,21 +25,26 @@ export const METRICS: Record<MetricKey, MetricDef> = {
   total: {
     key: 'total',
     label: 'Total',
-    noun: 'total activity',
+    noun: 'genomic testing activity',
+    shortNoun: 'total genomic tests',
     lowerIsBetter: false,
     breakdown: null,
   },
   cancer: {
     key: 'cancer',
     label: 'Cancer',
-    noun: 'cancer activity',
+    noun: 'cancer genomic testing activity',
+    shortNoun: 'cancer genomic tests',
     lowerIsBetter: false,
     breakdown: 'cancer',
   },
   rare: {
     key: 'rare',
     label: 'Rare disease',
+    // Left as "activity": the phrase already names its subject, so it does not
+    // need the same disambiguation the generic "activity" did.
     noun: 'rare & inherited disease activity',
+    shortNoun: 'rare & inherited disease activity',
     lowerIsBetter: false,
     breakdown: 'rare',
   },
@@ -108,7 +113,7 @@ const basisSuffix = (basis: Basis) => (basis === 'per1k' ? 'per 1,000 population
 
 /** Second-line wording for two-line headings. */
 const BASIS_SUBLABEL: Record<Basis, string> = {
-  count: 'Counts, 12 months',
+  count: 'Genomic tests, 12 months',
   per1k: 'Per 1,000 population',
 }
 
@@ -117,9 +122,9 @@ const BASIS_SUBLABEL: Record<Basis, string> = {
  * the line actually plots — the trend follows the metric, not the drill-down.
  */
 export const TREND_COVERAGE: Record<MetricKey, string> = {
-  total: 'Covers total activity per month.',
-  cancer: 'Covers total cancer activity per month.',
-  rare: 'Covers total rare disease activity per month.',
+  total: 'Covers total genomic testing activity per month.',
+  cancer: 'Covers total cancer genomic testing activity per month.',
+  rare: 'Covers total rare & inherited disease activity per month.',
 }
 /**
  * Rates display to 1dp — but a small sub-category's rate is ~0.002 per 1,000,
@@ -153,7 +158,9 @@ export function resolveMeasure(view: MetricView): ActiveMeasure {
 
   // Undrilled: the metric's own headline figure.
   if (!def.breakdown || !view.subCategory) {
-    const noun = def.noun.replace(/^./, (c) => c.toUpperCase())
+    // shortNoun, not noun: longLabel lands in the map subtitle, the comparison
+    // bars and the ranked list, where the full phrase wraps.
+    const noun = def.shortNoun.replace(/^./, (c) => c.toUpperCase())
     return {
       label: def.label,
       // Short form on purpose: the full noun ("Rare & inherited disease
@@ -233,7 +240,7 @@ export function trendLabels(view: MetricView, subject?: string): TrendLabels {
     subtitle: perThousand
       ? `Monthly ${noun} per 1,000 population, this hub vs the England average.`
       : `Monthly ${noun}, this hub vs the England average.`,
-    axisLabel: perThousand ? 'Per 1,000 per month' : 'Tests per month',
-    unit: perThousand ? 'per 1,000' : 'tests',
+    axisLabel: perThousand ? 'Per 1,000 per month' : 'Genomic tests per month',
+    unit: perThousand ? 'per 1,000' : 'genomic tests',
   }
 }
