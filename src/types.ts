@@ -44,8 +44,17 @@ export interface MetricDef {
   key: MetricKey
   /** Short label used on the toggle buttons. */
   label: string
-  /** Lower-case noun used to build headings and trend labels. */
+  /**
+   * Lower-case noun for headings and trend titles, where there is room for the
+   * full "genomic testing activity" phrasing.
+   */
   noun: string
+  /**
+   * Compact lower-case noun for stat labels, the map subtitle and the ranked
+   * list — places where the full noun wraps. Says "genomic tests" rather than
+   * "genomic testing activity".
+   */
+  shortNoun: string
   /** true when a lower value is the "better" direction. None today, but the
    *  ranking/perf code still honours it, so it stays part of the contract. */
   lowerIsBetter: boolean
@@ -54,7 +63,7 @@ export interface MetricDef {
 }
 
 export interface TrendLabels {
-  /** Panel heading, e.g. "12-month cancer activity trend". */
+  /** Panel heading, e.g. "12-month cancer genomic testing activity trend". */
   title: string
   /** One line under the heading explaining what is plotted. */
   subtitle: string

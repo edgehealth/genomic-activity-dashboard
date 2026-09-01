@@ -83,7 +83,9 @@ export default function MapPanel({
             className="subctl__select"
             value={view.subCategory ?? ''}
             disabled={!canDrill}
-            title={canDrill ? undefined : 'Total activity has no sub-category breakdown'}
+            title={
+              canDrill ? undefined : 'Total genomic testing activity has no sub-category breakdown'
+            }
             onChange={(e) => onSelectSubCategory(e.target.value || null)}
           >
             <option value="">

@@ -13,12 +13,12 @@ interface Kpi {
 export default function KpiRow({ national }: { national: NationalSummary }) {
   const kpis: Kpi[] = [
     {
-      label: 'Total activity, 12 months',
+      label: 'Total genomic tests, 12 months',
       value: fmt(national.totalActivity),
       foot: `across ${national.hubCount} Genomic Laboratory Hubs`,
     },
     {
-      label: 'Cancer activity, 12 months',
+      label: 'Cancer genomic tests, 12 months',
       value: fmt(national.cancerActivity),
       foot: 'national total',
     },
@@ -28,7 +28,7 @@ export default function KpiRow({ national }: { national: NationalSummary }) {
       foot: 'national total',
     },
     {
-      label: 'Activity per 1,000 population',
+      label: 'Genomic tests per 1,000 population',
       value: national.per1k.toFixed(1),
       foot: 'England population-weighted mean',
       accent: true,
