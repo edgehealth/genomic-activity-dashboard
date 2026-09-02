@@ -7,6 +7,7 @@ import Header from './components/Header'
 import KpiRow from './components/KpiRow'
 import MapPanel from './components/MapPanel'
 import DetailPanel from './components/DetailPanel'
+import { DetailPanelSkeleton, KpiRowSkeleton, MapPanelSkeleton } from './components/Skeletons'
 
 export default function App() {
   const { data, loading, error } = useGenomics()
@@ -50,11 +51,27 @@ export default function App() {
             </p>
           </div>
 
-          {loading && <div className="state state--loading">Loading genomic testing activity…</div>}
+          {/* Screen readers get a status message; the skeletons themselves are
+              aria-hidden, since shimmer blocks say nothing useful aloud. */}
+          <p className="visually-hidden" role="status" aria-live="polite">
+            {loading
+              ? 'Loading genomic testing activity.'
+              : error
+                ? `Could not load data: ${error}`
+                : 'Genomic testing activity loaded.'}
+          </p>
+
           {error && (
             <div className="state state--error">
               Couldn’t load data: {error}
             </div>
+          )}
+
+          {loading && (
+            <>
+              <KpiRowSkeleton />
+              <MapPanelSkeleton />
+            </>
           )}
 
           {data && (
@@ -75,6 +92,8 @@ export default function App() {
             </>
           )}
         </main>
+
+        {loading && <DetailPanelSkeleton />}
 
         {data && (
           <DetailPanel
