@@ -361,6 +361,58 @@
   color: #8a2f22;
 }
 
+/* Skeletons ----------------------------------------------------------------*/
+/* One shimmer primitive; the skeleton components reuse the real layout
+   classes around it, so the page doesn't reflow when data lands. */
+.shim {
+  display: block;
+  border-radius: 5px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-alt) 0%,
+    #eeece5 40%,
+    #eeece5 60%,
+    var(--surface-alt) 100%
+  );
+  background-size: 300% 100%;
+  animation: shim 1.4s ease-in-out infinite;
+}
+@keyframes shim {
+  from { background-position: 150% 0; }
+  to   { background-position: -150% 0; }
+}
+
+/* Variants for shapes that aren't plain text lines. */
+.shim--pill { border-radius: 8px; }
+.shim--field { border-radius: 7px; }
+.shim--track { border-radius: 5px; }
+.shim--chart { border-radius: 8px; }
+/* The map: a square block that scales with the column, so the panel reaches
+   its real height before the SVG exists. */
+.skel__map { width: 100%; max-width: 340px; }
+.shim--map { aspect-ratio: 1 / 1.06; height: auto; border-radius: 8px; }
+
+/* Spacing helpers — these mirror the margins in the real components. */
+.skel__gap-4 { margin-top: 4px; }
+.skel__gap-5 { margin-top: 5px; }
+.skel__gap-6 { margin-top: 6px; }
+.skel__gap-8 { margin-top: 8px; }
+.skel__gap-12 { margin-top: 12px; }
+.skel__grow { flex: 1; min-width: 0; }
+
+.skel__rows { display: flex; flex-direction: column; gap: 3px; }
+.skel__row {
+  display: grid; grid-template-columns: 20px 1fr auto;
+  align-items: center; gap: 8px; padding: 7px 9px;
+}
+.skel__bars { display: flex; flex-direction: column; gap: 13px; margin-top: 12px; }
+.skel__barhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+/* Respect a user's motion preference: keep the placeholder, drop the sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .shim { animation: none; background: var(--surface-alt); }
+}
+
 /* Note under the trend chart when a hub has no series for the metric. */
 .trend__note {
   font-size: 10.5px; color: var(--muted); font-style: italic;
