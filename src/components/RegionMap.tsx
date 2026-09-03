@@ -68,9 +68,26 @@ interface Props {
   selectedId: string
   selectedIcb: string | null
   onSelectIcb: (icbCode: string, glhId: string) => void
+  /**
+   * Shade each ICB by its own value instead of its parent GLH's. Supplied by
+   * the gene tab, where the data really is ICB-level; omitted on the GLH tab,
+   * where every ICB in a hub necessarily shares one figure.
+   * Return null for an ICB with no data — it gets the hatch, not the palest fill.
+   */
+  icbValue?: (icbCode: string) => number | null
+  /** Formats icbValue for the tooltip. */
+  formatIcbValue?: (v: number) => string
 }
 
-export default function RegionMap({ hubs, view, selectedId, selectedIcb, onSelectIcb }: Props) {
+export default function RegionMap({
+  hubs,
+  view,
+  selectedId,
+  selectedIcb,
+  onSelectIcb,
+  icbValue,
+  formatIcbValue,
+}: Props) {
   const measure = resolveMeasure(view)
   const { icbPaths, glhPaths } = useMap()
   const [hoveredIcb, setHoveredIcb] = useState<string | null>(null)
@@ -152,19 +169,30 @@ export default function RegionMap({ hubs, view, selectedId, selectedIcb, onSelec
     window.addEventListener('pointerup', handleUp)
   }
 
-  // Non-reporting hubs are excluded from the colour domain — including them as 0
-  // would stretch the ramp and paint them as the lowest value rather than absent.
-  const values = hubs.map((h) => measure.value(h)).filter((v): v is number => v !== null)
+  const hubById = new Map(hubs.map((h) => [h.id, h]))
+
+  /** The value a given ICB polygon is shaded by, on whichever basis applies. */
+  const valueForIcb = (icbCode: string, glhId: string): number | null => {
+    if (icbValue) return icbValue(icbCode)
+    const hub = hubById.get(glhId)
+    return hub ? measure.value(hub) : null
+  }
+
+  // Areas with no value are excluded from the colour domain — including them as
+  // 0 would stretch the ramp and paint them as the lowest value rather than
+  // absent. The domain spans ICBs or hubs depending on the mode.
+  const values = (
+    icbValue
+      ? icbPaths.map((p) => icbValue(p.props.icbCode))
+      : hubs.map((h) => measure.value(h))
+  ).filter((v): v is number => v !== null)
   const min = values.length ? Math.min(...values) : 0
   const max = values.length ? Math.max(...values) : 0
   const norm = (v: number) => (max === min ? 0.5 : (v - min) / (max - min))
-  const hubById = new Map(hubs.map((h) => [h.id, h]))
 
-  /** Fill for a GLH, or null when it has no value (caller draws the hatch). */
-  const fillFor = (glhId: string): string | null => {
-    const hub = hubById.get(glhId)
-    if (!hub) return null
-    const v = measure.value(hub)
+  /** Fill for an ICB polygon, or null when it has no value (caller hatches). */
+  const fillFor = (icbCode: string, glhId: string): string | null => {
+    const v = valueForIcb(icbCode, glhId)
     if (v === null) return null
     return scaleColor(0.12 + norm(v) * 0.88)
   }
@@ -199,7 +227,7 @@ export default function RegionMap({ hubs, view, selectedId, selectedIcb, onSelec
         {icbPaths.map(({ props, d }) => {
           const hub = hubById.get(props.glhId)
           const dimmed = hoveredIcb !== null && hoveredIcb !== props.icbCode
-          const fill = fillFor(props.glhId)
+          const fill = fillFor(props.icbCode, props.glhId)
           return (
             <path
               key={props.icbCode}
@@ -284,6 +312,11 @@ export default function RegionMap({ hubs, view, selectedId, selectedIcb, onSelec
           <strong>{hovered.icbName}</strong>
           <span>
             {(() => {
+              if (icbValue && hovered) {
+                const v = icbValue(hovered.icbCode)
+                const shown = v === null ? 'not reported' : (formatIcbValue ?? String)(v)
+                return `${hoveredHub?.name ?? 'Unknown'} GLH · ${shown}`
+              }
               if (!hoveredHub) return 'No hub data'
               const v = measure.value(hoveredHub)
               return v === null

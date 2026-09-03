@@ -205,6 +205,38 @@ export interface GeneActivity {
   defaultYear: number | null
   /** Every cancer type seen across all years, for the filter control. */
   cancerTypes: string[]
+  /** ICB-level cut of the same registry data (gen_16/gen_17). */
+  icb: IcbGeneActivity
+}
+
+/**
+ * Gene testing broken down by ICB — gen_16 (per gene) and gen_17 (per cancer
+ * site), for the latest year only.
+ *
+ * The API reports these against NHS **ODS** codes; every entry here is keyed on
+ * the ONS **GSS** code instead, so it lines up with the map boundaries and
+ * icbByCode. Rows whose ODS code doesn't resolve are dropped with a warning
+ * rather than silently discarded.
+ */
+export interface IcbGeneActivity {
+  /** The single year these figures cover, or null when absent from the feed. */
+  year: number | null
+  /** GSS code → per-gene counts, descending. */
+  byIcb: Record<string, IcbGeneRow[]>
+  /** GSS code → per-cancer-site counts, descending. */
+  sitesByIcb: Record<string, IcbGeneRow[]>
+  /** GSS code → total tests across all sites, for map shading. */
+  totalByIcb: Record<string, number>
+  /** Every cancer site present, for the filter control. */
+  sites: string[]
+}
+
+export interface IcbGeneRow {
+  /** Gene name (byIcb) or cancer site (sitesByIcb). */
+  label: string
+  tests: number
+  /** Share of that ICB's total tests for the year, 0..1. */
+  share: number
 }
 
 export interface NationalSummary {

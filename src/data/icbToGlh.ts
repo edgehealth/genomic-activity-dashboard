@@ -25,3 +25,12 @@ export const icbTable: IcbInfo[] = rawTable
 export const icbByCode: Record<string, IcbInfo> = Object.fromEntries(
   icbTable.map((icb) => [icb.icbCode, icb]),
 )
+
+/**
+ * Lookup by NHS ODS code. The API's `icb` column carries ODS codes
+ * (`QE1`, `D7T5G`), while the map and icbByCode are keyed on GSS codes
+ * (`E54…`) — so anything joining API rows to the map goes through here.
+ */
+export const icbByOds: Record<string, IcbInfo> = Object.fromEntries(
+  icbTable.map((icb) => [icb.odsCode, icb]),
+)

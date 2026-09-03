@@ -2,6 +2,8 @@ import type {
   Basis,
   BreakdownKey,
   GeneActivity,
+  IcbGeneActivity,
+  IcbGeneRow,
   GeneRow,
   GeneYear,
   Hub,
@@ -13,6 +15,7 @@ import type {
 import type { GenomicsRow } from '../services/genomicsApi'
 import { REMAINDER_KEY, sliceLabel } from './metrics'
 import { GLH_META, resolveGlhId } from './glhMeta'
+import { icbByOds } from './icbToGlh'
 
 // ---------------------------------------------------------------------------
 // Turn the long-format vw_genomics_metrics rows into the Hub[] + NationalSummary
@@ -403,7 +406,89 @@ function buildGeneActivity(rows: GenomicsRow[]): GeneActivity {
   // the current feed, and opening on it would understate every gene.
   const defaultYear = years.find((y) => !y.partial)?.year ?? years[0]?.year ?? null
 
-  return { years, defaultYear, cancerTypes: [...allCancerTypes].sort() }
+  return {
+    years,
+    defaultYear,
+    cancerTypes: [...allCancerTypes].sort(),
+    icb: buildIcbGeneActivity(rows),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ICB-level gene testing (gen_16 per gene, gen_17 per cancer site)
+// ---------------------------------------------------------------------------
+// Both are the latest year only — the view restricts them, because all years at
+// ICB grain would be ~151k rows.
+//
+// The API reports these against NHS ODS codes ('QE1', 'D7T5G'), but the map
+// boundaries and icbByCode use ONS GSS codes ('E54…'), so everything is
+// re-keyed to GSS here. An ODS code that doesn't resolve is dropped with a
+// warning: silently discarding it is how a whole region goes missing unnoticed.
+
+const ICB_GENE_METRIC = 'gen_16'
+const ICB_SITE_METRIC = 'gen_17'
+
+function buildIcbGeneActivity(rows: GenomicsRow[]): IcbGeneActivity {
+  const empty: IcbGeneActivity = { year: null, byIcb: {}, sitesByIcb: {}, totalByIcb: {}, sites: [] }
+  const relevant = rows.filter(
+    (r) => r.metric_id === ICB_GENE_METRIC || r.metric_id === ICB_SITE_METRIC,
+  )
+  if (relevant.length === 0) return empty
+
+  // gene counts and site counts per ICB, keyed by GSS code
+  const genes = new Map<string, Map<string, number>>()
+  const sites = new Map<string, Map<string, number>>()
+  const allSites = new Set<string>()
+  let year: number | null = null
+
+  for (const r of relevant) {
+    if (!r.icb) continue
+    const info = icbByOds[r.icb]
+    if (!info) {
+      warnOnce(
+        `icb-gene-unmapped-${r.icb}`,
+        `[transform] ${r.metric_id} carries ICB code "${r.icb}", which is not in ` +
+          'icb-to-glh.json. Its gene figures are excluded — add the code or check ' +
+          'whether the view is emitting ODS codes as expected.',
+      )
+      continue
+    }
+    year ??= yearOf(r.time_period)
+
+    const target = r.metric_id === ICB_GENE_METRIC ? genes : sites
+    const label = r.metric_id === ICB_GENE_METRIC ? r.gene : r.sub_category
+    if (!label) continue
+
+    let bucket = target.get(info.icbCode)
+    if (!bucket) {
+      bucket = new Map<string, number>()
+      target.set(info.icbCode, bucket)
+    }
+    bucket.set(label, (bucket.get(label) ?? 0) + num(r.numerator))
+    if (r.metric_id === ICB_SITE_METRIC) allSites.add(label)
+  }
+
+  // Totals come from the SITE metric: summing genes would double-count, because
+  // one test covers several genes.
+  const totalByIcb: Record<string, number> = {}
+  for (const [code, bucket] of sites) {
+    let total = 0
+    for (const v of bucket.values()) total += v
+    totalByIcb[code] = total
+  }
+
+  const toRows = (bucket: Map<string, number>, total: number): IcbGeneRow[] =>
+    [...bucket.entries()]
+      .map(([label, tests]) => ({ label, tests, share: total > 0 ? tests / total : 0 }))
+      .sort((a, b) => b.tests - a.tests)
+
+  const byIcb: Record<string, IcbGeneRow[]> = {}
+  for (const [code, bucket] of genes) byIcb[code] = toRows(bucket, totalByIcb[code] ?? 0)
+
+  const sitesByIcb: Record<string, IcbGeneRow[]> = {}
+  for (const [code, bucket] of sites) sitesByIcb[code] = toRows(bucket, totalByIcb[code] ?? 0)
+
+  return { year, byIcb, sitesByIcb, totalByIcb, sites: [...allSites].sort() }
 }
 
 export interface GenomicsData {

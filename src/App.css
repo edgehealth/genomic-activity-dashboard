@@ -42,6 +42,33 @@
   align-items: start;
 }
 .main { display: flex; flex-direction: column; gap: 20px; }
+/* The gene tab has no hub sidebar — its data is ICB-level, so a hub panel
+   beside it would imply a filter that doesn't exist. */
+.layout--full { grid-template-columns: minmax(0, 1fr); }
+
+/* Tabs ---------------------------------------------------------------------*/
+.tabs {
+  display: flex; gap: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: -6px;
+}
+.tab {
+  display: flex; flex-direction: column; gap: 2px;
+  background: transparent; border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px 10px;
+  text-align: left; color: var(--muted);
+  margin-bottom: -1px;
+  transition: color .12s, border-color .12s;
+}
+.tab:hover { color: var(--ink-soft); }
+.tab__label { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+.tab__hint { font-size: 10.5px; color: var(--muted); }
+.tab--on { color: var(--teal-900); border-bottom-color: var(--teal-700); }
+.tab--on .tab__hint { color: var(--teal-700); }
+.tab:focus-visible { outline: 2px solid var(--teal-500); outline-offset: -2px; border-radius: 6px; }
+
+.tabpanel { display: flex; flex-direction: column; gap: 20px; }
 
 /* Intro --------------------------------------------------------------------*/
 .intro__title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
@@ -468,3 +495,24 @@
 .genetable__type { color: var(--muted); font-size: 11px; }
 .genetable__muted { color: var(--muted); cursor: help; }
 .genetable__empty { color: var(--muted); font-style: italic; padding: 14px 8px; }
+
+/* Cancer-site breakdown, shown when a single ICB is selected ---------------*/
+/* gen_16 has no per-gene site split, so this is a separate cut rather than a
+   column in the gene table. */
+.genesites { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.genesites__title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.genesites__rows { display: flex; flex-direction: column; gap: 6px; }
+.genesites__row {
+  display: grid; grid-template-columns: minmax(0, 190px) 1fr auto;
+  align-items: center; gap: 12px;
+}
+.genesites__label { font-size: 11.5px; color: var(--ink-soft); }
+.genesites__bar {
+  position: relative; height: 7px; background: var(--surface-alt);
+  border: 1px solid var(--border); border-radius: 5px;
+}
+.genesites__fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: var(--teal-500); border-radius: 5px 0 0 5px;
+}
+.genesites__val { font-size: 11px; color: var(--muted); white-space: nowrap; }
